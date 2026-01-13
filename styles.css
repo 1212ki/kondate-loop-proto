@@ -385,6 +385,48 @@ button:hover {
   animation-delay: var(--delay, 0s);
 }
 
+.dish-list {
+  display: grid;
+  gap: 14px;
+}
+
+.dish-card {
+  border-radius: 12px;
+  border: 1px solid var(--outline);
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  display: grid;
+  gap: 10px;
+}
+
+.dish-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dish-card__title {
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.dish-card__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.dish-add {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: center;
+  border: 1px dashed var(--outline);
+  background: rgba(255, 255, 255, 0.6);
+}
+
 .day-header {
   display: flex;
   align-items: baseline;

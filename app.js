@@ -47,6 +47,167 @@ const DAY_LABELS = ["月", "火", "水", "木", "金", "土", "日"];
 const RECIPE_DB_KEY = "recipe-db-v1";
 const SERVING_OPTIONS = [1, 2];
 const DEFAULT_BASE_SERVINGS = 2;
+const DEFAULT_RECIPE_DB = [
+  {
+    id: "default-curry",
+    name: "チキンとゴロゴロ野菜のカレーライス",
+    url: "https://park.ajinomoto.co.jp/recipe/card/801044/",
+    baseServings: 2,
+    ingredients: [
+      { name: "鶏むね肉", grams: 125 },
+      { name: "じゃがいも", count: 1, grams: 100 },
+      { name: "玉ねぎ", count: 0.5, grams: 100 },
+      { name: "にんじん", count: 0.5, grams: 50 },
+      { name: "ほうれん草", count: 0.5, grams: 100 },
+      { name: "しめじ", count: 0.25, grams: 25 },
+      { name: "水", grams: 300 },
+      { name: "コンソメ（固形）", count: 0.5 },
+      { name: "カレールウ", grams: 40 },
+      { name: "ご飯", grams: 440 },
+      { name: "オリーブオイル" },
+    ],
+  },
+  {
+    id: "default-stew",
+    name: "野菜たっぷりクリームシチュー",
+    url: "https://park.ajinomoto.co.jp/recipe/card/708853/",
+    baseServings: 2,
+    ingredients: [
+      { name: "じゃがいも", count: 1, grams: 150 },
+      { name: "玉ねぎ", count: 0.5, grams: 100 },
+      { name: "にんじん", count: 0.5, grams: 80 },
+      { name: "ベーコン", grams: 30 },
+      { name: "薄力粉" },
+      { name: "水", grams: 200 },
+      { name: "コンソメ（顆粒）" },
+      { name: "牛乳", grams: 200 },
+      { name: "塩" },
+      { name: "こしょう" },
+      { name: "オリーブオイル" },
+    ],
+  },
+  {
+    id: "default-hamburg",
+    name: "味付きチーズハンバーグ",
+    url: "https://park.ajinomoto.co.jp/recipe/card/805060/",
+    baseServings: 2,
+    ingredients: [
+      { name: "合いびき肉", grams: 250 },
+      { name: "玉ねぎ", count: 0.5, grams: 100 },
+      { name: "オニオンコンソメスープ", count: 1 },
+      { name: "片栗粉" },
+      { name: "塩" },
+      { name: "こしょう" },
+      { name: "水", grams: 50 },
+      { name: "スライスチーズ", count: 1, grams: 20 },
+      { name: "サラダ油" },
+      { name: "ブロッコリー", count: 4, grams: 60 },
+      { name: "トマト", count: 0.5, grams: 100 },
+    ],
+  },
+  {
+    id: "default-ginger-pork",
+    name: "マヨうま！豚のしょうが焼き",
+    url: "https://park.ajinomoto.co.jp/recipe/card/802666/",
+    baseServings: 2,
+    ingredients: [
+      { name: "豚ロース薄切り肉", grams: 200 },
+      { name: "玉ねぎ", count: 0.5 },
+      { name: "しょうが" },
+      { name: "しょうゆ" },
+      { name: "みりん" },
+      { name: "酒" },
+      { name: "ほんだし" },
+      { name: "マヨネーズ" },
+      { name: "キャベツ" },
+      { name: "ミニトマト", count: 4 },
+    ],
+  },
+  {
+    id: "default-roll-cabbage",
+    name: "うま塩ロールキャベツ",
+    url: "https://park.ajinomoto.co.jp/recipe/card/803698/",
+    baseServings: 2,
+    ingredients: [
+      { name: "キャベツ", count: 4 },
+      { name: "合いびき肉", grams: 100 },
+      { name: "玉ねぎ", count: 0.5, grams: 100 },
+      { name: "にんじん", count: 0.33 },
+      { name: "味の素" },
+      { name: "こしょう" },
+      { name: "水", grams: 400 },
+      { name: "鶏だしキューブ", count: 1 },
+      { name: "ピザ用チーズ" },
+      { name: "スパゲッティ" },
+    ],
+  },
+  {
+    id: "default-tofu-spring-roll",
+    name: "豆腐とひき肉のふんわり春巻き",
+    url: "https://www.kurashiru.com/recipes/e5cb0736-8293-4247-aada-aa3d6b5fcac6",
+    baseServings: 2,
+    ingredients: [
+      { name: "春巻きの皮" },
+      { name: "絹ごし豆腐" },
+      { name: "豚ひき肉" },
+      { name: "長ねぎ" },
+      { name: "オイスターソース" },
+      { name: "しょうゆ" },
+      { name: "塩こしょう" },
+      { name: "水溶き薄力粉" },
+      { name: "揚げ油" },
+      { name: "パセリ" },
+    ],
+  },
+  {
+    id: "default-miso-soup",
+    name: "わかめの味噌汁",
+    url: "https://park.ajinomoto.co.jp/recipe/card/709413/",
+    baseServings: 2,
+    ingredients: [
+      { name: "乾燥カットわかめ", grams: 3 },
+      { name: "大根", grams: 75 },
+      { name: "水", grams: 300 },
+      { name: "ほんだし" },
+      { name: "みそ" },
+    ],
+  },
+  {
+    id: "default-dashimaki",
+    name: "定番☆だし巻き卵",
+    url: "https://park.ajinomoto.co.jp/recipe/card/801029/",
+    baseServings: 2,
+    ingredients: [
+      { name: "卵", count: 3 },
+      { name: "水" },
+      { name: "みりん" },
+      { name: "うす口しょうゆ" },
+      { name: "ほんだし" },
+      { name: "塩" },
+      { name: "サラダ油" },
+      { name: "大根おろし" },
+      { name: "しょうゆ" },
+    ],
+  },
+  {
+    id: "default-omurice",
+    name: "GOLD チキンオムライス",
+    url: "https://park.ajinomoto.co.jp/recipe/card/801980/",
+    baseServings: 2,
+    ingredients: [
+      { name: "ご飯", count: 2 },
+      { name: "鶏もも肉", count: 0.5 },
+      { name: "冷凍シーフードミックス", grams: 100 },
+      { name: "にんじん", count: 0.5 },
+      { name: "トマトケチャップ" },
+      { name: "コンソメ（顆粒）" },
+      { name: "ブロッコリー", count: 0.5 },
+      { name: "ミニトマト", count: 0.5 },
+      { name: "卵", count: 2 },
+      { name: "サラダ油" },
+    ],
+  },
+];
 
 let currentWeekStart = startOfWeek(new Date());
 let currentData = loadWeekData(currentWeekStart);
@@ -54,6 +215,7 @@ let recipeDb = loadRecipeDb();
 let saveTimer = null;
 let editingRecipeId = null;
 let modalDayKey = null;
+let modalDishId = null;
 
 function formatDate(date) {
   const year = date.getFullYear();
@@ -144,8 +306,27 @@ function getDayData(key) {
   const day = currentData.days[key];
   if (typeof day.dinner === "string" && !day.dinnerId && !day.dinnerText) {
     day.dinnerText = day.dinner;
-    delete day.dinner;
   }
+  if (!Array.isArray(day.dishes)) {
+    day.dishes = [];
+  }
+  if (day.dinnerId || day.dinnerText) {
+    day.dishes.push(
+      createDishEntry({
+        recipeId: day.dinnerId || null,
+        servings: day.servings,
+        draftName: day.dinnerText || "",
+      }),
+    );
+  }
+  day.dishes = day.dishes.map(normalizeDishEntry).filter(Boolean);
+  if (day.dishes.length === 0) {
+    day.dishes.push(createDishEntry());
+  }
+  delete day.dinner;
+  delete day.dinnerId;
+  delete day.dinnerText;
+  delete day.servings;
   return day;
 }
 
@@ -181,12 +362,44 @@ function normalizeBaseServings(value) {
   return DEFAULT_BASE_SERVINGS;
 }
 
-function resolveDayServings(dayData, recipe) {
+function createId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function createDishEntry({ recipeId = null, servings = 0, draftName = "" } = {}) {
+  const entry = {
+    id: createId("dish"),
+    recipeId: recipeId || null,
+    draftName: String(draftName || "").trim(),
+  };
+  const servingsValue = normalizeNumber(servings);
+  if (servingsValue > 0) {
+    entry.servings = servingsValue;
+  }
+  return entry;
+}
+
+function normalizeDishEntry(entry) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+  const id = typeof entry.id === "string" ? entry.id : createId("dish");
+  const recipeId = typeof entry.recipeId === "string" ? entry.recipeId : null;
+  const draftName = String(entry.draftName || "").trim();
+  const servingsValue = normalizeNumber(entry.servings);
+  const normalized = { id, recipeId, draftName };
+  if (servingsValue > 0) {
+    normalized.servings = servingsValue;
+  }
+  return normalized;
+}
+
+function resolveDishServings(dish, recipe) {
   if (!recipe) {
     return 0;
   }
   const base = normalizeBaseServings(recipe.baseServings);
-  const custom = normalizeNumber(dayData.servings);
+  const custom = normalizeNumber(dish.servings);
   return custom > 0 ? custom : base;
 }
 
@@ -229,23 +442,66 @@ function formatIngredientDisplay(ingredient) {
   return `${ingredient.name} ${parts.join(" / ")}`;
 }
 
+function buildDefaultRecipeDb() {
+  const now = new Date().toISOString();
+  return DEFAULT_RECIPE_DB.map((recipe) => ({
+    ...recipe,
+    baseServings: normalizeBaseServings(recipe.baseServings),
+    ingredients: normalizeIngredients(recipe.ingredients),
+    createdAt: now,
+    updatedAt: now,
+  }));
+}
+
+function mergeDefaultRecipes(existingRecipes) {
+  const normalized = existingRecipes.map((recipe) => ({
+    ...recipe,
+    baseServings: normalizeBaseServings(recipe.baseServings),
+    ingredients: normalizeIngredients(recipe.ingredients),
+  }));
+  const idSet = new Set(normalized.map((recipe) => recipe.id).filter(Boolean));
+  const nameSet = new Set(
+    normalized.map((recipe) => normalizeText(recipe.name || "")).filter(Boolean),
+  );
+  const defaults = buildDefaultRecipeDb();
+  const additions = defaults.filter((recipe) => {
+    const nameKey = normalizeText(recipe.name || "");
+    return !idSet.has(recipe.id) && !nameSet.has(nameKey);
+  });
+  if (additions.length === 0) {
+    return normalized;
+  }
+  return normalized.concat(additions);
+}
+
 function loadRecipeDb() {
   const raw = localStorage.getItem(RECIPE_DB_KEY);
   if (!raw) {
-    return [];
+    const seeded = buildDefaultRecipeDb();
+    localStorage.setItem(RECIPE_DB_KEY, JSON.stringify(seeded));
+    return seeded;
   }
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) {
-      return [];
+      const seeded = buildDefaultRecipeDb();
+      localStorage.setItem(RECIPE_DB_KEY, JSON.stringify(seeded));
+      return seeded;
     }
-    return parsed.map((recipe) => ({
-      ...recipe,
-      baseServings: normalizeBaseServings(recipe.baseServings),
-      ingredients: normalizeIngredients(recipe.ingredients),
-    }));
+    if (parsed.length === 0) {
+      const seeded = buildDefaultRecipeDb();
+      localStorage.setItem(RECIPE_DB_KEY, JSON.stringify(seeded));
+      return seeded;
+    }
+    const merged = mergeDefaultRecipes(parsed);
+    if (merged.length !== parsed.length) {
+      localStorage.setItem(RECIPE_DB_KEY, JSON.stringify(merged));
+    }
+    return merged;
   } catch (error) {
-    return [];
+    const seeded = buildDefaultRecipeDb();
+    localStorage.setItem(RECIPE_DB_KEY, JSON.stringify(seeded));
+    return seeded;
   }
 }
 
@@ -284,17 +540,45 @@ function getRecipeByName(name) {
   return recipeDb.find((recipe) => normalizeText(recipe.name) === normalized) || null;
 }
 
-function selectRecipeForDay(dayKey, recipe) {
+function selectRecipeForDish(dayKey, dishId, recipe) {
   const entry = getDayData(dayKey);
-  entry.dinnerId = recipe.id;
-  entry.servings = normalizeBaseServings(recipe.baseServings);
-  delete entry.dinnerText;
+  const dish = entry.dishes.find((item) => item.id === dishId);
+  if (!dish) {
+    return;
+  }
+  dish.recipeId = recipe.id;
+  dish.draftName = "";
+  dish.servings = normalizeBaseServings(recipe.baseServings);
   commitSave();
   renderWeek(currentWeekStart);
 }
 
-function openRecipeModal({ dayKey, name }) {
+function removeDish(dayKey, dishId) {
+  const entry = getDayData(dayKey);
+  entry.dishes = entry.dishes.filter((dish) => dish.id !== dishId);
+  if (entry.dishes.length === 0) {
+    entry.dishes.push(createDishEntry());
+  }
+  commitSave();
+  renderWeek(currentWeekStart);
+}
+
+function clearDishSelection(dayKey, dishId) {
+  const entry = getDayData(dayKey);
+  const dish = entry.dishes.find((item) => item.id === dishId);
+  if (!dish) {
+    return;
+  }
+  dish.recipeId = null;
+  dish.draftName = "";
+  delete dish.servings;
+  commitSave();
+  renderWeek(currentWeekStart);
+}
+
+function openRecipeModal({ dayKey, dishId, name }) {
   modalDayKey = dayKey;
+  modalDishId = dishId;
   recipeModalForm.reset();
   recipeModalNameInput.value = name || "";
   recipeModalUrlInput.value = "";
@@ -309,6 +593,7 @@ function closeRecipeModal() {
   recipeModal.hidden = true;
   document.body.classList.remove("modal-open");
   modalDayKey = null;
+  modalDishId = null;
 }
 
 function createIngredientRow(listEl, { name = "", count = "", grams = "" } = {}) {
@@ -550,7 +835,7 @@ function syncViewFromHash() {
   openAppView({ scroll: false });
 }
 
-function renderSearchResults({ query, container, dayKey }) {
+function renderSearchResults({ query, container, dayKey, dishId }) {
   container.innerHTML = "";
   const trimmed = query.trim();
   if (!trimmed) {
@@ -584,7 +869,7 @@ function renderSearchResults({ query, container, dayKey }) {
       }
 
       item.addEventListener("click", () => {
-        selectRecipeForDay(dayKey, recipe);
+        selectRecipeForDish(dayKey, dishId, recipe);
       });
 
       container.appendChild(item);
@@ -597,13 +882,13 @@ function renderSearchResults({ query, container, dayKey }) {
     createButton.className = "recipe-search__item recipe-search__item--create";
     createButton.textContent = `「${trimmed}」を新規登録`;
     createButton.addEventListener("click", () => {
-      openRecipeModal({ dayKey, name: trimmed });
+      openRecipeModal({ dayKey, dishId, name: trimmed });
     });
     container.appendChild(createButton);
   }
 }
 
-function renderRecipeDetail({ dayData, recipe, dayKey }) {
+function renderDishDetail({ dish, recipe, dayKey }) {
   const detail = document.createElement("div");
   detail.className = "recipe-detail";
 
@@ -658,11 +943,7 @@ function renderRecipeDetail({ dayData, recipe, dayKey }) {
     clearButton.className = "button--ghost button--small";
     clearButton.textContent = "選択解除";
     clearButton.addEventListener("click", () => {
-      const entry = getDayData(dayKey);
-      delete entry.dinnerId;
-      delete entry.servings;
-      commitSave();
-      renderWeek(currentWeekStart);
+      clearDishSelection(dayKey, dish.id);
     });
 
     const editButton = document.createElement("button");
@@ -682,7 +963,7 @@ function renderRecipeDetail({ dayData, recipe, dayKey }) {
     return detail;
   }
 
-  if (dayData.dinnerId && !recipe) {
+  if (dish.recipeId && !recipe) {
     const empty = document.createElement("p");
     empty.className = "recipe-detail__empty";
     empty.textContent = "レシピが削除されています。";
@@ -693,21 +974,17 @@ function renderRecipeDetail({ dayData, recipe, dayKey }) {
     clearButton.className = "button--ghost button--small";
     clearButton.textContent = "選択解除";
     clearButton.addEventListener("click", () => {
-      const entry = getDayData(dayKey);
-      delete entry.dinnerId;
-      delete entry.servings;
-      commitSave();
-      renderWeek(currentWeekStart);
+      clearDishSelection(dayKey, dish.id);
     });
     detail.appendChild(clearButton);
 
     return detail;
   }
 
-  if (dayData.dinnerText) {
+  if (dish.draftName) {
     const legacy = document.createElement("p");
     legacy.className = "recipe-detail__empty";
-    legacy.textContent = `以前の入力: ${dayData.dinnerText}`;
+    legacy.textContent = `入力中: ${dish.draftName}`;
     detail.appendChild(legacy);
 
     const actions = document.createElement("div");
@@ -719,7 +996,7 @@ function renderRecipeDetail({ dayData, recipe, dayKey }) {
     registerButton.textContent = "レシピDBに追加";
     registerButton.addEventListener("click", () => {
       resetRecipeForm();
-      fillRecipeForm({ name: dayData.dinnerText, url: "", ingredients: [] });
+      fillRecipeForm({ name: dish.draftName, url: "", ingredients: [] });
       openRecipesView({ scroll: true });
       history.replaceState(null, "", "#recipes");
     });
@@ -732,7 +1009,7 @@ function renderRecipeDetail({ dayData, recipe, dayKey }) {
 
   const empty = document.createElement("p");
   empty.className = "recipe-detail__empty";
-  empty.textContent = "まだレシピが選択されていません。";
+  empty.textContent = "まだ品目が選択されていません。";
   detail.appendChild(empty);
 
   const hint = document.createElement("p");
@@ -743,12 +1020,12 @@ function renderRecipeDetail({ dayData, recipe, dayKey }) {
   return detail;
 }
 
-function renderServingControl({ dayData, recipe }) {
+function renderServingControl({ dish, recipe }) {
   const wrapper = document.createElement("label");
   wrapper.className = "servings-field";
 
   const label = document.createElement("span");
-  label.textContent = "今日は何人前";
+  label.textContent = "この品は何人前";
   wrapper.appendChild(label);
 
   const input = document.createElement("input");
@@ -758,7 +1035,7 @@ function renderServingControl({ dayData, recipe }) {
 
   if (recipe) {
     const baseServings = normalizeBaseServings(recipe.baseServings);
-    const servingsValue = resolveDayServings(dayData, recipe);
+    const servingsValue = resolveDishServings(dish, recipe);
     input.value = servingsValue ? formatNumber(servingsValue) : formatNumber(baseServings);
     input.placeholder = formatNumber(baseServings);
   } else {
@@ -772,9 +1049,9 @@ function renderServingControl({ dayData, recipe }) {
     }
     const value = normalizeNumber(input.value);
     if (value > 0) {
-      dayData.servings = value;
+      dish.servings = value;
     } else {
-      delete dayData.servings;
+      delete dish.servings;
     }
     scheduleSave();
     renderShoppingList();
@@ -786,7 +1063,7 @@ function renderServingControl({ dayData, recipe }) {
     }
     if (!input.value) {
       const baseServings = normalizeBaseServings(recipe.baseServings);
-      dayData.servings = baseServings;
+      dish.servings = baseServings;
       input.value = formatNumber(baseServings);
       scheduleSave();
       renderShoppingList();
@@ -821,7 +1098,6 @@ function renderWeek(weekStart) {
     date.setDate(date.getDate() + index);
     const dateKey = formatDate(date);
     const dayData = getDayData(dateKey);
-    const selectedRecipe = dayData.dinnerId ? getRecipeById(dayData.dinnerId) : null;
 
     const card = document.createElement("article");
     card.className = "day-card";
@@ -842,57 +1118,118 @@ function renderWeek(weekStart) {
     header.appendChild(dateLabel);
     card.appendChild(header);
 
-    const searchWrapper = document.createElement("div");
-    searchWrapper.className = "recipe-search";
+    const dishList = document.createElement("div");
+    dishList.className = "dish-list";
 
-    const label = document.createElement("label");
-    label.textContent = "料理名";
+    dayData.dishes.forEach((dish, dishIndex) => {
+      const selectedRecipe = dish.recipeId ? getRecipeById(dish.recipeId) : null;
 
-    const input = document.createElement("input");
-    input.type = "text";
-    input.placeholder = "料理名を入力";
-    if (selectedRecipe) {
-      input.value = selectedRecipe.name;
-    } else if (dayData.dinnerText) {
-      input.value = dayData.dinnerText;
-    }
+      const dishCard = document.createElement("div");
+      dishCard.className = "dish-card";
 
-    const results = document.createElement("div");
-    results.className = "recipe-search__results";
-    results.hidden = true;
+      const dishHeader = document.createElement("div");
+      dishHeader.className = "dish-card__header";
 
-    input.addEventListener("input", () => {
-      renderSearchResults({ query: input.value, container: results, dayKey: dateKey });
+      const dishTitle = document.createElement("span");
+      dishTitle.className = "dish-card__title";
+      dishTitle.textContent = `品目 ${dishIndex + 1}`;
+
+      const dishActions = document.createElement("div");
+      dishActions.className = "dish-card__actions";
+      if (dayData.dishes.length > 1) {
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "button--ghost button--small";
+        removeButton.textContent = "品目を削除";
+        removeButton.addEventListener("click", () => {
+          removeDish(dateKey, dish.id);
+        });
+        dishActions.appendChild(removeButton);
+      }
+
+      dishHeader.appendChild(dishTitle);
+      dishHeader.appendChild(dishActions);
+      dishCard.appendChild(dishHeader);
+
+      const searchWrapper = document.createElement("div");
+      searchWrapper.className = "recipe-search";
+
+      const label = document.createElement("label");
+      label.textContent = "料理名";
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "料理名を入力";
+      if (selectedRecipe) {
+        input.value = selectedRecipe.name;
+      } else if (dish.draftName) {
+        input.value = dish.draftName;
+      }
+
+      const results = document.createElement("div");
+      results.className = "recipe-search__results";
+      results.hidden = true;
+
+      input.addEventListener("input", () => {
+        dish.draftName = input.value;
+        scheduleSave();
+        renderSearchResults({
+          query: input.value,
+          container: results,
+          dayKey: dateKey,
+          dishId: dish.id,
+        });
+      });
+
+      input.addEventListener("focus", () => {
+        renderSearchResults({
+          query: input.value,
+          container: results,
+          dayKey: dateKey,
+          dishId: dish.id,
+        });
+      });
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") {
+          return;
+        }
+        const trimmed = input.value.trim();
+        if (!trimmed) {
+          return;
+        }
+        event.preventDefault();
+        dish.draftName = trimmed;
+        const existing = getRecipeByName(trimmed);
+        if (existing) {
+          selectRecipeForDish(dateKey, dish.id, existing);
+          return;
+        }
+        openRecipeModal({ dayKey: dateKey, dishId: dish.id, name: trimmed });
+      });
+
+      searchWrapper.appendChild(label);
+      searchWrapper.appendChild(input);
+      searchWrapper.appendChild(results);
+
+      dishCard.appendChild(searchWrapper);
+      dishCard.appendChild(renderDishDetail({ dish, recipe: selectedRecipe, dayKey: dateKey }));
+      dishCard.appendChild(renderServingControl({ dish, recipe: selectedRecipe }));
+      dishList.appendChild(dishCard);
     });
 
-    input.addEventListener("focus", () => {
-      renderSearchResults({ query: input.value, container: results, dayKey: dateKey });
+    card.appendChild(dishList);
+
+    const addDishButton = document.createElement("button");
+    addDishButton.type = "button";
+    addDishButton.className = "button--ghost button--small dish-add";
+    addDishButton.textContent = "+ 品目を追加";
+    addDishButton.addEventListener("click", () => {
+      dayData.dishes.push(createDishEntry());
+      commitSave();
+      renderWeek(currentWeekStart);
     });
-
-    input.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") {
-        return;
-      }
-      const trimmed = input.value.trim();
-      if (!trimmed) {
-        return;
-      }
-      event.preventDefault();
-      const existing = getRecipeByName(trimmed);
-      if (existing) {
-        selectRecipeForDay(dateKey, existing);
-        return;
-      }
-      openRecipeModal({ dayKey: dateKey, name: trimmed });
-    });
-
-    searchWrapper.appendChild(label);
-    searchWrapper.appendChild(input);
-    searchWrapper.appendChild(results);
-
-    card.appendChild(searchWrapper);
-    card.appendChild(renderRecipeDetail({ dayData, recipe: selectedRecipe, dayKey: dateKey }));
-    card.appendChild(renderServingControl({ dayData, recipe: selectedRecipe }));
+    card.appendChild(addDishButton);
 
     weekGrid.appendChild(card);
   }
@@ -911,34 +1248,36 @@ function renderShoppingList() {
     date.setDate(date.getDate() + index);
     const dateKey = formatDate(date);
     const dayData = getDayData(dateKey);
-    if (!dayData.dinnerId) {
-      continue;
-    }
-    const recipe = getRecipeById(dayData.dinnerId);
-    if (!recipe) {
-      continue;
-    }
-    const baseServings = normalizeBaseServings(recipe.baseServings);
-    const servings = resolveDayServings(dayData, recipe);
-    const multiplier = servings / baseServings;
-    recipe.ingredients.forEach((ingredient) => {
-      const name = ingredient.name.trim();
-      if (!name) {
+    dayData.dishes.forEach((dish) => {
+      if (!dish.recipeId) {
         return;
       }
-      const countValue = normalizeNumber(ingredient.count);
-      const gramsValue = normalizeNumber(ingredient.grams);
-      const key = normalizeText(name);
-      if (!totals.has(key)) {
-        totals.set(key, { name, count: 0, grams: 0 });
-        orderedKeys.push(key);
+      const recipe = getRecipeById(dish.recipeId);
+      if (!recipe) {
+        return;
       }
-      const entry = totals.get(key);
-      entry.count += countValue * multiplier;
-      if (gramsValue > 0) {
-        const gramsMultiplier = countValue > 0 ? countValue : 1;
-        entry.grams += gramsValue * gramsMultiplier * multiplier;
-      }
+      const baseServings = normalizeBaseServings(recipe.baseServings);
+      const servings = resolveDishServings(dish, recipe);
+      const multiplier = servings / baseServings;
+      recipe.ingredients.forEach((ingredient) => {
+        const name = ingredient.name.trim();
+        if (!name) {
+          return;
+        }
+        const countValue = normalizeNumber(ingredient.count);
+        const gramsValue = normalizeNumber(ingredient.grams);
+        const key = normalizeText(name);
+        if (!totals.has(key)) {
+          totals.set(key, { name, count: 0, grams: 0 });
+          orderedKeys.push(key);
+        }
+        const entry = totals.get(key);
+        entry.count += countValue * multiplier;
+        if (gramsValue > 0) {
+          const gramsMultiplier = countValue > 0 ? countValue : 1;
+          entry.grams += gramsValue * gramsMultiplier * multiplier;
+        }
+      });
     });
   }
 
@@ -1075,8 +1414,8 @@ recipeModalForm.addEventListener("submit", (event) => {
   saveRecipeDb();
   renderRecipeList();
 
-  if (modalDayKey) {
-    selectRecipeForDay(modalDayKey, targetRecipe);
+  if (modalDayKey && modalDishId) {
+    selectRecipeForDish(modalDayKey, modalDishId, targetRecipe);
   } else {
     renderWeek(currentWeekStart);
   }
