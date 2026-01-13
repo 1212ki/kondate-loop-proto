@@ -16,3 +16,5 @@
 - 日ごとに「今日は何人前」を入力できます
 - 食材リストは人数に合わせて自動生成されます
 - レシピDBでは食材名・数量・グラムを登録できます（URLは任意）
+
+Local path in this workspace: C:\Users\owner\.codex\system\menu-looper-proto\index.html
