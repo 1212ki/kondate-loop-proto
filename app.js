@@ -2,6 +2,7 @@ const weekGrid = document.getElementById("weekGrid");
 const landingSection = document.getElementById("landing");
 const appSection = document.getElementById("app");
 const recipesSection = document.getElementById("recipes");
+const publicRecipesSection = document.getElementById("publicRecipes");
 const enterAppButton = document.getElementById("enterApp");
 const enterRecipesButton = document.getElementById("enterRecipes");
 const backToLandingButton = document.getElementById("backToLanding");
@@ -65,6 +66,20 @@ const recipeModalTagInput = document.getElementById("recipeModalTagInput");
 const recipeModalTagList = document.getElementById("recipeModalTagList");
 const tagFilter = document.getElementById("tagFilter");
 const tagFilterList = document.getElementById("tagFilterList");
+
+// Public recipes elements
+const publicRecipeSearch = document.getElementById("publicRecipeSearch");
+const publicRecipeList = document.getElementById("publicRecipeList");
+const publicRecipeEmpty = document.getElementById("publicRecipeEmpty");
+const publicRecipeCount = document.getElementById("publicRecipeCount");
+const publicTagFilter = document.getElementById("publicTagFilter");
+const publicTagFilterList = document.getElementById("publicTagFilterList");
+const backToLandingFromPublicButton = document.getElementById("backToLandingFromPublic");
+const openAppFromPublicButton = document.getElementById("openAppFromPublic");
+
+// Public recipes data (initialized early to avoid TDZ errors)
+let publicRecipesData = [];
+let publicSelectedTags = [];
 
 const loadingOverlay = document.getElementById("loadingOverlay");
 const loadingText = document.getElementById("loadingText");
@@ -1414,6 +1429,7 @@ function openRecipesView({ scroll } = { scroll: true }) {
   landingSection.hidden = true;
   appSection.hidden = true;
   recipesSection.hidden = false;
+  publicRecipesSection.hidden = true;
   renderTagFilter();
   renderRecipeList();
   if (scroll) {
@@ -1425,6 +1441,7 @@ function openAppView({ scroll } = { scroll: true }) {
   landingSection.hidden = true;
   appSection.hidden = false;
   recipesSection.hidden = true;
+  publicRecipesSection.hidden = true;
   if (scroll) {
     appSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1434,6 +1451,19 @@ function openLandingView() {
   landingSection.hidden = false;
   appSection.hidden = true;
   recipesSection.hidden = true;
+  publicRecipesSection.hidden = true;
+}
+
+function openPublicRecipesView({ scroll } = { scroll: true }) {
+  landingSection.hidden = true;
+  appSection.hidden = true;
+  recipesSection.hidden = true;
+  publicRecipesSection.hidden = false;
+  renderPublicRecipes();
+  renderPublicTagFilter();
+  if (scroll) {
+    publicRecipesSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 function syncViewFromHash() {
@@ -1443,6 +1473,10 @@ function syncViewFromHash() {
   }
   if (window.location.hash === "#recipes") {
     openRecipesView({ scroll: false });
+    return;
+  }
+  if (window.location.hash === "#publicRecipes") {
+    openPublicRecipesView({ scroll: false });
     return;
   }
   if (window.location.hash === "#landing") {
@@ -2248,6 +2282,47 @@ openAppFromRecipesButton.addEventListener("click", () => {
   history.replaceState(null, "", "#app");
 });
 
+// Public recipes navigation handlers
+if (backToLandingFromPublicButton) {
+  backToLandingFromPublicButton.addEventListener("click", () => {
+    openLandingView();
+    history.replaceState(null, "", "#landing");
+  });
+}
+
+if (openAppFromPublicButton) {
+  openAppFromPublicButton.addEventListener("click", () => {
+    openAppView({ scroll: true });
+    history.replaceState(null, "", "#app");
+  });
+}
+
+// Desktop navigation to public recipes
+const openPublicRecipesFromAppButton = document.getElementById("openPublicRecipesFromApp");
+const openPublicRecipesFromRecipesButton = document.getElementById("openPublicRecipesFromRecipes");
+const openRecipesFromPublicButton = document.getElementById("openRecipesFromPublic");
+
+if (openPublicRecipesFromAppButton) {
+  openPublicRecipesFromAppButton.addEventListener("click", () => {
+    openPublicRecipesView({ scroll: true });
+    history.replaceState(null, "", "#publicRecipes");
+  });
+}
+
+if (openPublicRecipesFromRecipesButton) {
+  openPublicRecipesFromRecipesButton.addEventListener("click", () => {
+    openPublicRecipesView({ scroll: true });
+    history.replaceState(null, "", "#publicRecipes");
+  });
+}
+
+if (openRecipesFromPublicButton) {
+  openRecipesFromPublicButton.addEventListener("click", () => {
+    openRecipesView({ scroll: true });
+    history.replaceState(null, "", "#recipes");
+  });
+}
+
 window.addEventListener("hashchange", syncViewFromHash);
 
 resetRecipeForm();
@@ -2256,10 +2331,12 @@ renderRecipeList();
 syncViewFromHash();
 
 // ============================================
-// Mobile Navigation & FAB
+// Navigation (PC Global Nav & Mobile Bottom Nav)
 // ============================================
 
 const mobileNav = document.getElementById("mobileNav");
+const globalNav = document.getElementById("globalNav");
+const pageEl = document.querySelector(".page");
 const fabShopping = document.getElementById("fabShopping");
 const fabBadge = document.getElementById("fabBadge");
 
@@ -2267,39 +2344,67 @@ function isMobileView() {
   return window.innerWidth <= 768;
 }
 
-function updateMobileNav(currentView) {
-  if (!mobileNav) return;
-
+function updateNavigation(currentView) {
   // ランディングページではナビを非表示
   if (currentView === "landing") {
-    mobileNav.hidden = true;
-    if (fabShopping) fabShopping.hidden = true;
+    if (mobileNav) mobileNav.hidden = true;
+    if (globalNav) globalNav.hidden = true;
+    if (pageEl) pageEl.classList.remove("page--with-nav");
     return;
   }
 
-  // モバイルではナビを表示
-  mobileNav.hidden = !isMobileView();
-
-  // アクティブなナビアイテムを更新
-  const navItems = mobileNav.querySelectorAll(".mobile-nav__item");
-  navItems.forEach((item) => {
-    const navType = item.dataset.nav;
-    const isActive = (currentView === "app" && navType === "kondate") ||
-                     (currentView === "recipes" && navType === "recipes") ||
-                     (currentView === "shopping" && navType === "shopping");
-    if (isActive) {
-      item.setAttribute("aria-current", "page");
-      item.classList.add("mobile-nav__item--active");
-    } else {
-      item.removeAttribute("aria-current");
-      item.classList.remove("mobile-nav__item--active");
-    }
-  });
-
-  // FABは献立画面でのみ表示（買い物リストへのショートカット）
-  if (fabShopping) {
-    fabShopping.hidden = !(isMobileView() && currentView === "app");
+  // モバイル: ボトムナビを表示、グローバルナビを非表示
+  // PC: グローバルナビを表示、ボトムナビを非表示
+  if (isMobileView()) {
+    if (mobileNav) mobileNav.hidden = false;
+    if (globalNav) globalNav.hidden = true;
+    if (pageEl) pageEl.classList.remove("page--with-nav");
+  } else {
+    if (mobileNav) mobileNav.hidden = true;
+    if (globalNav) globalNav.hidden = false;
+    if (pageEl) pageEl.classList.add("page--with-nav");
   }
+
+  // アクティブなナビアイテムを更新（モバイル）
+  if (mobileNav) {
+    const navItems = mobileNav.querySelectorAll(".mobile-nav__item");
+    navItems.forEach((item) => {
+      const navType = item.dataset.nav;
+      const isActive = (currentView === "app" && navType === "kondate") ||
+                       (currentView === "recipes" && navType === "recipes") ||
+                       (currentView === "publicRecipes" && navType === "publicRecipes");
+      if (isActive) {
+        item.setAttribute("aria-current", "page");
+        item.classList.add("mobile-nav__item--active");
+      } else {
+        item.removeAttribute("aria-current");
+        item.classList.remove("mobile-nav__item--active");
+      }
+    });
+  }
+
+  // アクティブなナビアイテムを更新（PC）
+  if (globalNav) {
+    const navLinks = globalNav.querySelectorAll(".global-nav__link");
+    navLinks.forEach((link) => {
+      const navType = link.dataset.nav;
+      const isActive = (currentView === "app" && navType === "kondate") ||
+                       (currentView === "recipes" && navType === "recipes") ||
+                       (currentView === "publicRecipes" && navType === "publicRecipes");
+      if (isActive) {
+        link.setAttribute("aria-current", "page");
+        link.classList.add("global-nav__link--active");
+      } else {
+        link.removeAttribute("aria-current");
+        link.classList.remove("global-nav__link--active");
+      }
+    });
+  }
+}
+
+// Alias for backward compatibility
+function updateMobileNav(currentView) {
+  updateNavigation(currentView);
 }
 
 function scrollToShoppingList() {
@@ -2328,33 +2433,57 @@ function updateFabBadge() {
   }
 }
 
+// Navigation click handler (shared for mobile and PC)
+function handleNavClick(navType) {
+  switch (navType) {
+    case "landing":
+      openLandingView();
+      history.replaceState(null, "", "#landing");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      break;
+    case "kondate":
+      openAppView({ scroll: false });
+      history.replaceState(null, "", "#app");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      break;
+    case "recipes":
+      openRecipesView({ scroll: false });
+      history.replaceState(null, "", "#recipes");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      break;
+    case "publicRecipes":
+      openPublicRecipesView({ scroll: false });
+      history.replaceState(null, "", "#publicRecipes");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      break;
+  }
+}
+
 // Mobile nav click handlers
 if (mobileNav) {
   mobileNav.addEventListener("click", (event) => {
     const navItem = event.target.closest(".mobile-nav__item");
     if (!navItem) return;
+    handleNavClick(navItem.dataset.nav);
+  });
+}
 
-    const navType = navItem.dataset.nav;
-    switch (navType) {
-      case "kondate":
-        openAppView({ scroll: false });
-        history.replaceState(null, "", "#app");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        break;
-      case "shopping":
-        // 献立画面に移動してから買い物リストにスクロール
-        if (appSection.hidden) {
-          openAppView({ scroll: false });
-          history.replaceState(null, "", "#app");
-        }
-        setTimeout(scrollToShoppingList, 100);
-        break;
-      case "recipes":
-        openRecipesView({ scroll: false });
-        history.replaceState(null, "", "#recipes");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        break;
+// PC Global nav click handlers
+if (globalNav) {
+  globalNav.addEventListener("click", (event) => {
+    // Handle logo click - go to landing
+    const logo = event.target.closest(".global-nav__logo");
+    if (logo) {
+      event.preventDefault();
+      openLandingView();
+      history.replaceState(null, "", "#landing");
+      return;
     }
+
+    // Handle nav link click
+    const navLink = event.target.closest(".global-nav__link");
+    if (!navLink) return;
+    handleNavClick(navLink.dataset.nav);
   });
 }
 
@@ -2367,11 +2496,11 @@ if (fabShopping) {
 const originalOpenAppView = openAppView;
 const originalOpenRecipesView = openRecipesView;
 const originalOpenLandingView = openLandingView;
+const originalOpenPublicRecipesView = openPublicRecipesView;
 
 function openAppViewWithNav(options) {
   originalOpenAppView.call(this, options);
   updateMobileNav("app");
-  setTimeout(updateFabBadge, 100);
 }
 
 function openRecipesViewWithNav(options) {
@@ -2384,10 +2513,16 @@ function openLandingViewWithNav() {
   updateMobileNav("landing");
 }
 
+function openPublicRecipesViewWithNav(options) {
+  originalOpenPublicRecipesView.call(this, options);
+  updateMobileNav("publicRecipes");
+}
+
 // Replace global functions
 window.openAppView = openAppViewWithNav;
 window.openRecipesView = openRecipesViewWithNav;
 window.openLandingView = openLandingViewWithNav;
+window.openPublicRecipesView = openPublicRecipesViewWithNav;
 
 // Override renderShoppingList to update FAB badge
 const originalRenderShoppingList = renderShoppingList;
@@ -2402,17 +2537,1138 @@ window.renderShoppingList = renderShoppingListWithBadge;
 // Update on resize
 window.addEventListener("resize", () => {
   const currentView = !landingSection.hidden ? "landing" :
-                      !appSection.hidden ? "app" : "recipes";
+                      !appSection.hidden ? "app" :
+                      !recipesSection.hidden ? "recipes" : "publicRecipes";
   updateMobileNav(currentView);
 });
 
 // Initial mobile nav state
 function initMobileNav() {
   const currentView = !landingSection.hidden ? "landing" :
-                      !appSection.hidden ? "app" : "recipes";
+                      !appSection.hidden ? "app" :
+                      !recipesSection.hidden ? "recipes" : "publicRecipes";
   updateMobileNav(currentView);
-  updateFabBadge();
 }
 
 // Run after initial render
 setTimeout(initMobileNav, 0);
+
+// ============================================
+// Public Recipes Functionality
+// ============================================
+
+async function loadPublicRecipes() {
+  try {
+    const response = await fetch("public-recipes.json");
+    const data = await response.json();
+    publicRecipesData = data.recipes || [];
+    if (publicRecipeCount) {
+      publicRecipeCount.textContent = publicRecipesData.length + "件";
+    }
+    return publicRecipesData;
+  } catch (error) {
+    console.error("Failed to load public recipes:", error);
+    publicRecipesData = [];
+    return [];
+  }
+}
+
+function getPublicRecipeTags() {
+  const tags = new Set();
+  publicRecipesData.forEach(recipe => {
+    (recipe.tags || []).forEach(tag => tags.add(tag));
+  });
+  return Array.from(tags).sort();
+}
+
+function renderPublicTagFilter() {
+  if (!publicTagFilterList) return;
+
+  const tags = getPublicRecipeTags();
+  publicTagFilterList.innerHTML = "";
+
+  if (tags.length === 0) {
+    publicTagFilter.hidden = true;
+    return;
+  }
+
+  publicTagFilter.hidden = false;
+
+  // すべて表示ボタン
+  const allButton = document.createElement("button");
+  allButton.type = "button";
+  allButton.className = "tag-filter__btn" + (publicSelectedTags.length === 0 ? " tag-filter__btn--active" : "");
+  allButton.textContent = "すべて";
+  allButton.addEventListener("click", () => {
+    publicSelectedTags = [];
+    renderPublicTagFilter();
+    renderPublicRecipes();
+  });
+  publicTagFilterList.appendChild(allButton);
+
+  // 各タグボタン
+  tags.forEach(tag => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tag-filter__btn" + (publicSelectedTags.includes(tag) ? " tag-filter__btn--active" : "");
+    button.textContent = tag;
+    button.addEventListener("click", () => {
+      if (publicSelectedTags.includes(tag)) {
+        publicSelectedTags = publicSelectedTags.filter(t => t !== tag);
+      } else {
+        publicSelectedTags.push(tag);
+      }
+      renderPublicTagFilter();
+      renderPublicRecipes();
+    });
+    publicTagFilterList.appendChild(button);
+  });
+}
+
+function filterPublicRecipes(recipes, query) {
+  let filtered = recipes;
+
+  // タグフィルター
+  if (publicSelectedTags.length > 0) {
+    filtered = filtered.filter(recipe =>
+      publicSelectedTags.some(tag => (recipe.tags || []).includes(tag))
+    );
+  }
+
+  // 検索クエリ
+  if (query && query.trim()) {
+    const q = query.trim().toLowerCase();
+    filtered = filtered.filter(recipe => {
+      const nameMatch = recipe.name.toLowerCase().includes(q);
+      const ingredientMatch = (recipe.ingredients || []).some(
+        ing => ing.name.toLowerCase().includes(q)
+      );
+      const tagMatch = (recipe.tags || []).some(
+        tag => tag.toLowerCase().includes(q)
+      );
+      return nameMatch || ingredientMatch || tagMatch;
+    });
+  }
+
+  return filtered;
+}
+
+function renderPublicRecipes() {
+  if (!publicRecipeList) return;
+
+  const query = publicRecipeSearch ? publicRecipeSearch.value : "";
+  const filtered = filterPublicRecipes(publicRecipesData, query);
+
+  publicRecipeList.innerHTML = "";
+
+  if (filtered.length === 0) {
+    publicRecipeEmpty.hidden = false;
+    return;
+  }
+
+  publicRecipeEmpty.hidden = true;
+
+  filtered.forEach(recipe => {
+    const card = document.createElement("article");
+    card.className = "recipe-card";
+
+    const ingredientsList = (recipe.ingredients || [])
+      .slice(0, 5)
+      .map(ing => ing.name)
+      .join("、");
+    const moreIngredients = (recipe.ingredients || []).length > 5
+      ? `　他${(recipe.ingredients || []).length - 5}品`
+      : "";
+
+    const tagsHtml = (recipe.tags || []).map(tag =>
+      `<span class="recipe-card__tag">${tag}</span>`
+    ).join("");
+
+    card.innerHTML = `
+      <div class="recipe-card__header">
+        <h3 class="recipe-card__title">${recipe.name}</h3>
+        <span class="recipe-card__servings">${recipe.servings}人前</span>
+      </div>
+      <div class="recipe-card__tags">${tagsHtml}</div>
+      <p class="recipe-card__ingredients">
+        <strong>食材:</strong> ${ingredientsList}${moreIngredients}
+      </p>
+      <div class="recipe-card__actions">
+        <button type="button" class="button--primary button--small import-btn">
+          メニューに追加
+        </button>
+        <button type="button" class="button--ghost button--small detail-btn">
+          詳細を見る
+        </button>
+      </div>
+    `;
+
+    // Import button handler
+    const importBtn = card.querySelector(".import-btn");
+    importBtn.addEventListener("click", () => importPublicRecipe(recipe));
+
+    // Detail button handler
+    const detailBtn = card.querySelector(".detail-btn");
+    detailBtn.addEventListener("click", () => showPublicRecipeDetail(recipe));
+
+    publicRecipeList.appendChild(card);
+  });
+}
+
+// Toast notification
+let toastTimeout = null;
+
+function showToast(message, type = "default") {
+  console.log("showToast called:", { message, type });
+
+  const toastEl = document.getElementById("toast");
+  const toastMessageEl = document.getElementById("toastMessage");
+
+  console.log("Toast elements:", { toastEl, toastMessageEl });
+
+  if (!toastEl || !toastMessageEl) {
+    console.warn("Toast elements not found:", { toastEl, toastMessageEl });
+    return;
+  }
+
+  // Clear existing timeout
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+  }
+
+  // Update message and style
+  toastMessageEl.textContent = message;
+  toastEl.className = "toast" + (type !== "default" ? ` toast--${type}` : "");
+  toastEl.removeAttribute("hidden");
+
+  console.log("Toast should be visible now, hidden attr:", toastEl.hasAttribute("hidden"));
+
+  // Auto hide after 3 seconds
+  toastTimeout = setTimeout(() => {
+    toastEl.setAttribute("hidden", "");
+  }, 3000);
+}
+
+// Recipe detail modal
+const recipeDetailModal = document.getElementById("recipeDetailModal");
+const recipeDetailModalBackdrop = document.getElementById("recipeDetailModalBackdrop");
+const recipeDetailModalClose = document.getElementById("recipeDetailModalClose");
+const recipeDetailTitle = document.getElementById("recipeDetailTitle");
+const recipeDetailBody = document.getElementById("recipeDetailBody");
+const recipeDetailImport = document.getElementById("recipeDetailImport");
+
+let currentDetailRecipe = null;
+
+function openRecipeDetailModal(recipe) {
+  if (!recipeDetailModal) return;
+
+  currentDetailRecipe = recipe;
+
+  // Build tags HTML
+  const tagsHtml = (recipe.tags || []).map(tag =>
+    `<span class="recipe-card__tag">${tag}</span>`
+  ).join("");
+
+  // Build ingredients HTML
+  const ingredientsHtml = (recipe.ingredients || []).map(ing => {
+    const amount = ing.amount ? `${ing.amount}${ing.unit || ""}` : "";
+    return `<li>
+      <span class="recipe-detail__ingredient-name">${ing.name}</span>
+      <span class="recipe-detail__ingredient-amount">${amount}</span>
+    </li>`;
+  }).join("");
+
+  // Set modal content
+  recipeDetailBody.innerHTML = `
+    <h3 class="recipe-detail__name">${recipe.name}</h3>
+    <div class="recipe-detail__meta">
+      <span class="recipe-detail__servings">${recipe.servings}人前</span>
+      <div class="recipe-detail__tags">${tagsHtml}</div>
+    </div>
+    <div class="recipe-detail__section">
+      <h4 class="recipe-detail__section-title">食材</h4>
+      <ul class="recipe-detail__ingredients">${ingredientsHtml}</ul>
+    </div>
+    ${recipe.instructions ? `
+    <div class="recipe-detail__section">
+      <h4 class="recipe-detail__section-title">作り方</h4>
+      <p class="recipe-detail__instructions">${recipe.instructions}</p>
+    </div>
+    ` : ""}
+  `;
+
+  recipeDetailModal.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeRecipeDetailModal() {
+  if (!recipeDetailModal) return;
+  recipeDetailModal.hidden = true;
+  document.body.style.overflow = "";
+  currentDetailRecipe = null;
+}
+
+// Modal event listeners
+if (recipeDetailModalBackdrop) {
+  recipeDetailModalBackdrop.addEventListener("click", closeRecipeDetailModal);
+}
+if (recipeDetailModalClose) {
+  recipeDetailModalClose.addEventListener("click", closeRecipeDetailModal);
+}
+if (recipeDetailImport) {
+  recipeDetailImport.addEventListener("click", () => {
+    if (currentDetailRecipe) {
+      importPublicRecipe(currentDetailRecipe);
+      closeRecipeDetailModal();
+    }
+  });
+}
+
+function importPublicRecipe(publicRecipe) {
+  // Check if already exists in private recipes
+  const existing = recipeDb.find(r => r.name === publicRecipe.name);
+  if (existing) {
+    if (!confirm(`「${publicRecipe.name}」は既にメニューに登録されています。上書きしますか？`)) {
+      return;
+    }
+    // Remove existing recipe
+    recipeDb = recipeDb.filter(r => r.id !== existing.id);
+  }
+
+  // Convert public recipe format to private recipe format
+  const newRecipe = {
+    id: "recipe-" + Date.now(),
+    name: publicRecipe.name,
+    url: "",
+    baseServings: publicRecipe.servings,
+    tags: [...(publicRecipe.tags || [])],
+    instructions: publicRecipe.instructions || "",
+    ingredients: (publicRecipe.ingredients || []).map(ing => ({
+      name: ing.name,
+      amount: ing.amount,
+      unit: ing.unit || ""
+    }))
+  };
+
+  recipeDb.push(newRecipe);
+  saveRecipeDb();
+
+  // Show success toast
+  console.log("importPublicRecipe: calling showToast");
+  showToast(`「${publicRecipe.name}」をメニューに追加しました`, "success");
+
+  // Re-render to update UI
+  renderPublicRecipes();
+}
+
+function showPublicRecipeDetail(recipe) {
+  openRecipeDetailModal(recipe);
+}
+
+// Search input handler
+if (publicRecipeSearch) {
+  publicRecipeSearch.addEventListener("input", () => {
+    renderPublicRecipes();
+  });
+}
+
+// Load public recipes on page load
+loadPublicRecipes().then(() => {
+  // If we're on public recipes page, re-render after data is loaded
+  if (window.location.hash === "#publicRecipes" || !publicRecipesSection.hidden) {
+    renderPublicRecipes();
+    renderPublicTagFilter();
+  }
+});
+
+// ============================================
+// Weekly Sets Functionality (1週間を選ぶ)
+// ============================================
+
+const WEEKLY_SETS_DB_KEY = "weekly-sets-db-v1";
+const FAVORITE_SETS_KEY = "favorite-sets-v1";
+const MY_SETS_KEY = "my-sets-v1";
+const APPLIED_SET_KEY_PREFIX = "applied-set-";
+
+// Weekly Sets section elements
+const weeklySetsSection = document.getElementById("weeklySets");
+const setCount = document.getElementById("setCount");
+const favoriteSetCount = document.getElementById("favoriteSetCount");
+const favoriteSetsSection = document.getElementById("favoriteSetsSection");
+const favoriteSetsGrid = document.getElementById("favoriteSetsGrid");
+const mySetsSection = document.getElementById("mySetsSection");
+const mySetsGrid = document.getElementById("mySetsGrid");
+const seasonSetsGrid = document.getElementById("seasonSetsGrid");
+const sceneSetsGrid = document.getElementById("sceneSetsGrid");
+const allSetsGrid = document.getElementById("allSetsGrid");
+const setsEmpty = document.getElementById("setsEmpty");
+
+// Set detail modal elements
+const setDetailModal = document.getElementById("setDetailModal");
+const setDetailModalBackdrop = document.getElementById("setDetailModalBackdrop");
+const setDetailModalClose = document.getElementById("setDetailModalClose");
+const setDetailTitle = document.getElementById("setDetailTitle");
+const setDetailBody = document.getElementById("setDetailBody");
+const setFavoriteToggle = document.getElementById("setFavoriteToggle");
+const applySetButton = document.getElementById("applySetButton");
+
+// Set apply modal elements
+const setApplyModal = document.getElementById("setApplyModal");
+const setApplyModalBackdrop = document.getElementById("setApplyModalBackdrop");
+const setApplyModalClose = document.getElementById("setApplyModalClose");
+const setApplyDate = document.getElementById("setApplyDate");
+const setApplyCustom = document.getElementById("setApplyCustom");
+const confirmApplySet = document.getElementById("confirmApplySet");
+const cancelApplySet = document.getElementById("cancelApplySet");
+
+// Save my set modal elements
+const saveMySetModal = document.getElementById("saveMySetModal");
+const saveMySetModalBackdrop = document.getElementById("saveMySetModalBackdrop");
+const saveMySetModalClose = document.getElementById("saveMySetModalClose");
+const mySetName = document.getElementById("mySetName");
+const confirmSaveMySet = document.getElementById("confirmSaveMySet");
+const cancelSaveMySet = document.getElementById("cancelSaveMySet");
+
+// Applied set banner elements
+const appliedSetBanner = document.getElementById("appliedSetBanner");
+const appliedSetName = document.getElementById("appliedSetName");
+const saveAsMySet = document.getElementById("saveAsMySet");
+const applySetFromKondate = document.getElementById("applySetFromKondate");
+
+// Navigation elements for weekly sets
+const backToLandingFromSets = document.getElementById("backToLandingFromSets");
+const openAppFromSets = document.getElementById("openAppFromSets");
+const openRecipesFromSets = document.getElementById("openRecipesFromSets");
+
+// Current state
+let currentDetailSet = null;
+let selectedApplyWeek = "current";
+
+// Default weekly sets data (運営が用意するセット)
+const DEFAULT_WEEKLY_SETS = [
+  {
+    id: "set-nabe-week",
+    name: "お鍋であったか1週間",
+    description: "寒い日に嬉しい、鍋料理中心の1週間",
+    tags: ["冬", "鍋", "あったか"],
+    category: "season",
+    days: [
+      { day: "月", dishes: [{ name: "キムチ鍋", recipeId: null }] },
+      { day: "火", dishes: [{ name: "豚しゃぶ", recipeId: null }] },
+      { day: "水", dishes: [{ name: "おでん", recipeId: null }] },
+      { day: "木", dishes: [{ name: "もつ鍋", recipeId: null }] },
+      { day: "金", dishes: [{ name: "すき焼き", recipeId: null }] },
+      { day: "土", dishes: [] },
+      { day: "日", dishes: [{ name: "水炊き", recipeId: null }] },
+    ],
+  },
+  {
+    id: "set-summer-vege",
+    name: "夏野菜を楽しむ1週間",
+    description: "旬の夏野菜をたっぷり使った献立",
+    tags: ["夏", "野菜", "さっぱり"],
+    category: "season",
+    days: [
+      { day: "月", dishes: [{ name: "ゴーヤチャンプルー", recipeId: null }] },
+      { day: "火", dishes: [{ name: "冷やし中華", recipeId: null }] },
+      { day: "水", dishes: [{ name: "ナスの揚げ浸し", recipeId: null }, { name: "冷奴", recipeId: null }] },
+      { day: "木", dishes: [{ name: "トマトカレー", recipeId: null }] },
+      { day: "金", dishes: [{ name: "ズッキーニのパスタ", recipeId: null }] },
+      { day: "土", dishes: [] },
+      { day: "日", dishes: [{ name: "夏野菜の揚げ浸し", recipeId: null }] },
+    ],
+  },
+  {
+    id: "set-busy-week",
+    name: "忙しい週の時短1週間",
+    description: "15分以内で作れる簡単レシピ中心",
+    tags: ["時短", "簡単", "平日"],
+    category: "scene",
+    days: [
+      { day: "月", dishes: [{ name: "豚のしょうが焼き", recipeId: "default-ginger-pork" }] },
+      { day: "火", dishes: [{ name: "親子丼", recipeId: null }] },
+      { day: "水", dishes: [{ name: "焼きそば", recipeId: null }] },
+      { day: "木", dishes: [{ name: "チャーハン", recipeId: null }] },
+      { day: "金", dishes: [{ name: "カレーライス", recipeId: "default-curry" }] },
+      { day: "土", dishes: [] },
+      { day: "日", dishes: [{ name: "オムライス", recipeId: "default-omurice" }] },
+    ],
+  },
+  {
+    id: "set-washoku-week",
+    name: "和食の基本1週間",
+    description: "定番の和食で落ち着く1週間",
+    tags: ["和食", "定番", "家庭料理"],
+    category: "scene",
+    days: [
+      { day: "月", dishes: [{ name: "肉じゃが", recipeId: null }, { name: "味噌汁", recipeId: "default-miso-soup" }] },
+      { day: "火", dishes: [{ name: "焼き魚", recipeId: null }, { name: "ひじき煮", recipeId: null }] },
+      { day: "水", dishes: [{ name: "豚汁", recipeId: null }, { name: "だし巻き卵", recipeId: "default-dashimaki" }] },
+      { day: "木", dishes: [{ name: "筑前煮", recipeId: null }] },
+      { day: "金", dishes: [{ name: "鮭の塩焼き", recipeId: null }, { name: "きんぴらごぼう", recipeId: null }] },
+      { day: "土", dishes: [] },
+      { day: "日", dishes: [{ name: "天ぷら", recipeId: null }] },
+    ],
+  },
+  {
+    id: "set-genki-week",
+    name: "元気がない時の1週間",
+    description: "優しい味付けで体に染みる献立",
+    tags: ["優しい", "回復", "体調管理"],
+    category: "scene",
+    days: [
+      { day: "月", dishes: [{ name: "雑炊", recipeId: null }] },
+      { day: "火", dishes: [{ name: "湯豆腐", recipeId: null }] },
+      { day: "水", dishes: [{ name: "うどん", recipeId: null }] },
+      { day: "木", dishes: [{ name: "クリームシチュー", recipeId: "default-stew" }] },
+      { day: "金", dishes: [{ name: "茶碗蒸し", recipeId: null }, { name: "おにぎり", recipeId: null }] },
+      { day: "土", dishes: [] },
+      { day: "日", dishes: [{ name: "お粥", recipeId: null }] },
+    ],
+  },
+];
+
+// Load/Save functions
+function loadWeeklySets() {
+  const raw = localStorage.getItem(WEEKLY_SETS_DB_KEY);
+  if (!raw) {
+    // Initialize with default sets
+    localStorage.setItem(WEEKLY_SETS_DB_KEY, JSON.stringify(DEFAULT_WEEKLY_SETS));
+    return [...DEFAULT_WEEKLY_SETS];
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [...DEFAULT_WEEKLY_SETS];
+  }
+}
+
+function saveWeeklySets(sets) {
+  localStorage.setItem(WEEKLY_SETS_DB_KEY, JSON.stringify(sets));
+}
+
+function loadFavoriteSets() {
+  const raw = localStorage.getItem(FAVORITE_SETS_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveFavoriteSets(favorites) {
+  localStorage.setItem(FAVORITE_SETS_KEY, JSON.stringify(favorites));
+}
+
+function loadMySets() {
+  const raw = localStorage.getItem(MY_SETS_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveMySets(mySets) {
+  localStorage.setItem(MY_SETS_KEY, JSON.stringify(mySets));
+}
+
+function getAppliedSetKey(weekStart) {
+  return APPLIED_SET_KEY_PREFIX + formatDate(weekStart);
+}
+
+function loadAppliedSet(weekStart) {
+  const key = getAppliedSetKey(weekStart);
+  const raw = localStorage.getItem(key);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveAppliedSet(weekStart, setInfo) {
+  const key = getAppliedSetKey(weekStart);
+  if (setInfo) {
+    localStorage.setItem(key, JSON.stringify(setInfo));
+  } else {
+    localStorage.removeItem(key);
+  }
+}
+
+// State
+let weeklySetsData = loadWeeklySets();
+let favoriteSetsIds = loadFavoriteSets();
+let mySetsData = loadMySets();
+
+// Check if set is favorite
+function isSetFavorite(setId) {
+  return favoriteSetsIds.includes(setId);
+}
+
+// Toggle favorite
+function toggleSetFavorite(setId) {
+  if (isSetFavorite(setId)) {
+    favoriteSetsIds = favoriteSetsIds.filter(id => id !== setId);
+  } else {
+    favoriteSetsIds.push(setId);
+  }
+  saveFavoriteSets(favoriteSetsIds);
+  renderWeeklySets();
+  updateFavoriteCount();
+}
+
+// Update favorite count
+function updateFavoriteCount() {
+  if (favoriteSetCount) {
+    favoriteSetCount.textContent = favoriteSetsIds.length + "件";
+  }
+}
+
+// Get all sets (default + my sets)
+function getAllSets() {
+  return [...weeklySetsData, ...mySetsData];
+}
+
+// Open weekly sets view
+function openWeeklySetsView({ scroll } = { scroll: true }) {
+  landingSection.hidden = true;
+  appSection.hidden = true;
+  recipesSection.hidden = true;
+  publicRecipesSection.hidden = true;
+  weeklySetsSection.hidden = false;
+
+  renderWeeklySets();
+  updateFavoriteCount();
+
+  if (scroll) {
+    weeklySetsSection.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
+// Render set card
+function renderSetCard(set, container) {
+  const card = document.createElement("article");
+  card.className = "set-card";
+  card.dataset.setId = set.id;
+
+  const isFavorite = isSetFavorite(set.id);
+  const dayPreviews = set.days.map(d => {
+    const count = d.dishes.length;
+    return `<div class="set-card__day-preview">
+      <span class="set-card__day-label">${d.day}</span>
+      <span class="set-card__day-count">${count > 0 ? count : "-"}</span>
+    </div>`;
+  }).join("");
+
+  const tagsHtml = (set.tags || []).map(tag =>
+    `<span class="set-card__tag">${tag}</span>`
+  ).join("");
+
+  card.innerHTML = `
+    <div class="set-card__header">
+      <h3 class="set-card__name">${set.name}</h3>
+      <button type="button" class="set-card__favorite ${isFavorite ? "set-card__favorite--active" : ""}"
+              data-set-id="${set.id}" title="お気に入り">
+        <span class="material-symbols-rounded">${isFavorite ? "favorite" : "favorite_border"}</span>
+      </button>
+    </div>
+    <div class="set-card__tags">${tagsHtml}</div>
+    <div class="set-card__preview">${dayPreviews}</div>
+  `;
+
+  // Card click -> open detail
+  card.addEventListener("click", (e) => {
+    if (e.target.closest(".set-card__favorite")) return;
+    openSetDetailModal(set);
+  });
+
+  // Favorite button click
+  const favBtn = card.querySelector(".set-card__favorite");
+  favBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleSetFavorite(set.id);
+  });
+
+  container.appendChild(card);
+}
+
+// Render weekly sets
+function renderWeeklySets() {
+  const allSets = getAllSets();
+
+  // Update count
+  if (setCount) {
+    setCount.textContent = allSets.length + "件";
+  }
+
+  // Favorites
+  const favoriteSets = allSets.filter(s => isSetFavorite(s.id));
+  if (favoriteSets.length > 0) {
+    favoriteSetsSection.hidden = false;
+    favoriteSetsGrid.innerHTML = "";
+    favoriteSets.forEach(set => renderSetCard(set, favoriteSetsGrid));
+  } else {
+    favoriteSetsSection.hidden = true;
+  }
+
+  // My Sets
+  if (mySetsData.length > 0) {
+    mySetsSection.hidden = false;
+    mySetsGrid.innerHTML = "";
+    mySetsData.forEach(set => renderSetCard(set, mySetsGrid));
+  } else {
+    mySetsSection.hidden = true;
+  }
+
+  // Season sets
+  const seasonSets = weeklySetsData.filter(s => s.category === "season");
+  seasonSetsGrid.innerHTML = "";
+  if (seasonSets.length > 0) {
+    seasonSets.forEach(set => renderSetCard(set, seasonSetsGrid));
+    document.getElementById("seasonSetsSection").hidden = false;
+  } else {
+    document.getElementById("seasonSetsSection").hidden = true;
+  }
+
+  // Scene sets
+  const sceneSets = weeklySetsData.filter(s => s.category === "scene");
+  sceneSetsGrid.innerHTML = "";
+  if (sceneSets.length > 0) {
+    sceneSets.forEach(set => renderSetCard(set, sceneSetsGrid));
+    document.getElementById("sceneSetsSection").hidden = false;
+  } else {
+    document.getElementById("sceneSetsSection").hidden = true;
+  }
+
+  // All sets
+  allSetsGrid.innerHTML = "";
+  if (allSets.length > 0) {
+    setsEmpty.hidden = true;
+    allSets.forEach(set => renderSetCard(set, allSetsGrid));
+  } else {
+    setsEmpty.hidden = false;
+  }
+}
+
+// Open set detail modal
+function openSetDetailModal(set) {
+  currentDetailSet = set;
+
+  // Update favorite toggle
+  const isFavorite = isSetFavorite(set.id);
+  setFavoriteToggle.innerHTML = `<span class="material-symbols-rounded">${isFavorite ? "favorite" : "favorite_border"}</span>`;
+  setFavoriteToggle.classList.toggle("button--icon--active", isFavorite);
+
+  // Build timeline HTML
+  const timelineHtml = set.days.map((dayData, index) => {
+    const dishesHtml = dayData.dishes.length > 0
+      ? dayData.dishes.map(dish => `
+          <div class="set-timeline__dish">
+            <span class="set-timeline__dish-icon material-symbols-rounded">restaurant</span>
+            <span class="set-timeline__dish-name">${dish.name}</span>
+          </div>
+        `).join("")
+      : `<span class="set-timeline__empty">お休み / 外食</span>`;
+
+    return `
+      <div class="set-timeline__day">
+        <div class="set-timeline__day-header">
+          <span class="set-timeline__day-label">${dayData.day}曜</span>
+          <span class="set-timeline__day-num">${index + 1}</span>
+        </div>
+        <div class="set-timeline__day-content">
+          <div class="set-timeline__dishes">
+            ${dishesHtml}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const tagsHtml = (set.tags || []).map(tag =>
+    `<span class="set-detail__tag">${tag}</span>`
+  ).join("");
+
+  setDetailBody.innerHTML = `
+    <div class="set-detail__header">
+      <h3 class="set-detail__name">${set.name}</h3>
+      <p class="set-detail__desc">${set.description || ""}</p>
+      <div class="set-detail__tags">${tagsHtml}</div>
+    </div>
+    <div class="set-timeline">
+      ${timelineHtml}
+    </div>
+  `;
+
+  setDetailModal.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+// Close set detail modal
+function closeSetDetailModal() {
+  setDetailModal.hidden = true;
+  document.body.style.overflow = "";
+  currentDetailSet = null;
+}
+
+// Open set apply modal
+function openSetApplyModal(set) {
+  currentDetailSet = set || currentDetailSet;
+  selectedApplyWeek = "current";
+
+  // Reset UI
+  const options = setApplyModal.querySelectorAll(".set-apply__option");
+  options.forEach(opt => {
+    opt.classList.toggle("set-apply__option--active", opt.dataset.week === "current");
+  });
+  setApplyCustom.hidden = true;
+  setApplyDate.value = formatDate(startOfWeek(new Date()));
+
+  setApplyModal.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+// Close set apply modal
+function closeSetApplyModal() {
+  setApplyModal.hidden = true;
+  document.body.style.overflow = "";
+}
+
+// Apply set to week
+function applySetToWeek(set, targetWeekStart) {
+  // Load or create week data
+  const weekKey = storageKey(targetWeekStart);
+  let weekData = loadWeekData(targetWeekStart);
+
+  // Clear existing data
+  weekData.days = {};
+
+  // Apply set dishes to each day
+  set.days.forEach((dayData, index) => {
+    const dayKey = DAY_LABELS[index];
+    weekData.days[dayKey] = {
+      dishes: dayData.dishes.map(dish => createDishEntry({
+        recipeId: dish.recipeId || null,
+        draftName: dish.name,
+        servings: 2,
+      }))
+    };
+    // Ensure at least one empty dish if no dishes
+    if (weekData.days[dayKey].dishes.length === 0) {
+      weekData.days[dayKey].dishes.push(createDishEntry());
+    }
+  });
+
+  // Save week data
+  const payload = {
+    days: weekData.days,
+    shoppingChecked: weekData.shoppingChecked || {},
+    updatedAt: new Date().toISOString(),
+  };
+  localStorage.setItem(weekKey, JSON.stringify(payload));
+
+  // Save applied set info
+  saveAppliedSet(targetWeekStart, {
+    setId: set.id,
+    setName: set.name,
+    isMySet: set.isMySet || false,
+    appliedAt: new Date().toISOString(),
+  });
+
+  return weekData;
+}
+
+// Confirm apply set
+function confirmApplySetAction() {
+  if (!currentDetailSet) return;
+
+  let targetWeekStart;
+
+  switch (selectedApplyWeek) {
+    case "current":
+      targetWeekStart = startOfWeek(new Date());
+      break;
+    case "next":
+      targetWeekStart = new Date(startOfWeek(new Date()));
+      targetWeekStart.setDate(targetWeekStart.getDate() + 7);
+      break;
+    case "custom":
+      targetWeekStart = startOfWeek(new Date(setApplyDate.value));
+      break;
+    default:
+      targetWeekStart = startOfWeek(new Date());
+  }
+
+  applySetToWeek(currentDetailSet, targetWeekStart);
+
+  // Close modals
+  closeSetApplyModal();
+  closeSetDetailModal();
+
+  // Navigate to kondate view with the applied week
+  currentWeekStart = targetWeekStart;
+  currentData = loadWeekData(currentWeekStart);
+  openAppView({ scroll: true });
+  renderWeek(currentWeekStart);
+  updateAppliedSetBanner();
+
+  showToast(`「${currentDetailSet.name}」を適用しました`, "success");
+}
+
+// Update applied set banner
+function updateAppliedSetBanner() {
+  const appliedSet = loadAppliedSet(currentWeekStart);
+
+  if (appliedSet && appliedSetBanner && appliedSetName) {
+    appliedSetBanner.hidden = false;
+    appliedSetName.textContent = appliedSet.setName;
+  } else if (appliedSetBanner) {
+    appliedSetBanner.hidden = true;
+  }
+}
+
+// Save current week as my set
+function openSaveMySetModal() {
+  mySetName.value = "";
+  saveMySetModal.hidden = false;
+  document.body.style.overflow = "hidden";
+  mySetName.focus();
+}
+
+function closeSaveMySetModal() {
+  saveMySetModal.hidden = true;
+  document.body.style.overflow = "";
+}
+
+function confirmSaveMySetAction() {
+  const name = mySetName.value.trim();
+  if (!name) {
+    mySetName.focus();
+    return;
+  }
+
+  // Build set from current week data
+  const newSet = {
+    id: "my-set-" + Date.now(),
+    name: name,
+    description: "マイセット",
+    tags: ["マイセット"],
+    category: "my",
+    isMySet: true,
+    days: DAY_LABELS.map(dayKey => {
+      const dayData = getDayData(dayKey);
+      return {
+        day: dayKey,
+        dishes: dayData.dishes.filter(d => d.recipeId || d.draftName).map(d => {
+          const recipe = d.recipeId ? recipeDb.find(r => r.id === d.recipeId) : null;
+          return {
+            name: recipe ? recipe.name : d.draftName,
+            recipeId: d.recipeId || null,
+          };
+        })
+      };
+    }),
+    createdAt: new Date().toISOString(),
+  };
+
+  mySetsData.push(newSet);
+  saveMySets(mySetsData);
+
+  closeSaveMySetModal();
+  showToast(`「${name}」をマイセットに保存しました`, "success");
+
+  // Update applied set info
+  saveAppliedSet(currentWeekStart, {
+    setId: newSet.id,
+    setName: newSet.name,
+    isMySet: true,
+    appliedAt: new Date().toISOString(),
+  });
+  updateAppliedSetBanner();
+}
+
+// Event listeners for weekly sets navigation
+if (backToLandingFromSets) {
+  backToLandingFromSets.addEventListener("click", () => {
+    openLandingView();
+    history.replaceState(null, "", "#landing");
+  });
+}
+
+if (openAppFromSets) {
+  openAppFromSets.addEventListener("click", () => {
+    openAppView({ scroll: true });
+    history.replaceState(null, "", "#app");
+  });
+}
+
+if (openRecipesFromSets) {
+  openRecipesFromSets.addEventListener("click", () => {
+    openRecipesView({ scroll: true });
+    history.replaceState(null, "", "#recipes");
+  });
+}
+
+// Set detail modal events
+if (setDetailModalBackdrop) {
+  setDetailModalBackdrop.addEventListener("click", closeSetDetailModal);
+}
+if (setDetailModalClose) {
+  setDetailModalClose.addEventListener("click", closeSetDetailModal);
+}
+if (setFavoriteToggle) {
+  setFavoriteToggle.addEventListener("click", () => {
+    if (currentDetailSet) {
+      toggleSetFavorite(currentDetailSet.id);
+      const isFavorite = isSetFavorite(currentDetailSet.id);
+      setFavoriteToggle.innerHTML = `<span class="material-symbols-rounded">${isFavorite ? "favorite" : "favorite_border"}</span>`;
+      setFavoriteToggle.classList.toggle("button--icon--active", isFavorite);
+    }
+  });
+}
+if (applySetButton) {
+  applySetButton.addEventListener("click", () => {
+    openSetApplyModal(currentDetailSet);
+  });
+}
+
+// Set apply modal events
+if (setApplyModalBackdrop) {
+  setApplyModalBackdrop.addEventListener("click", closeSetApplyModal);
+}
+if (setApplyModalClose) {
+  setApplyModalClose.addEventListener("click", closeSetApplyModal);
+}
+if (cancelApplySet) {
+  cancelApplySet.addEventListener("click", closeSetApplyModal);
+}
+if (confirmApplySet) {
+  confirmApplySet.addEventListener("click", confirmApplySetAction);
+}
+
+// Week selection in apply modal
+const applyOptions = setApplyModal ? setApplyModal.querySelectorAll(".set-apply__option") : [];
+applyOptions.forEach(option => {
+  option.addEventListener("click", () => {
+    applyOptions.forEach(opt => opt.classList.remove("set-apply__option--active"));
+    option.classList.add("set-apply__option--active");
+    selectedApplyWeek = option.dataset.week;
+    setApplyCustom.hidden = selectedApplyWeek !== "custom";
+  });
+});
+
+// Save my set modal events
+if (saveMySetModalBackdrop) {
+  saveMySetModalBackdrop.addEventListener("click", closeSaveMySetModal);
+}
+if (saveMySetModalClose) {
+  saveMySetModalClose.addEventListener("click", closeSaveMySetModal);
+}
+if (cancelSaveMySet) {
+  cancelSaveMySet.addEventListener("click", closeSaveMySetModal);
+}
+if (confirmSaveMySet) {
+  confirmSaveMySet.addEventListener("click", confirmSaveMySetAction);
+}
+
+// Applied set banner events
+if (saveAsMySet) {
+  saveAsMySet.addEventListener("click", openSaveMySetModal);
+}
+if (applySetFromKondate) {
+  applySetFromKondate.addEventListener("click", () => {
+    openWeeklySetsView({ scroll: true });
+    history.replaceState(null, "", "#weeklySets");
+  });
+}
+
+// Extend handleNavClick for weeklySets
+const originalHandleNavClick = handleNavClick;
+window.handleNavClick = function(navType) {
+  if (navType === "weeklySets") {
+    openWeeklySetsView({ scroll: false });
+    history.replaceState(null, "", "#weeklySets");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } else {
+    originalHandleNavClick(navType);
+  }
+};
+
+// Extend updateNavigation for weeklySets
+const originalUpdateNavigation = updateNavigation;
+window.updateNavigation = function(currentView) {
+  originalUpdateNavigation(currentView);
+
+  // Update mobile nav for weeklySets
+  if (mobileNav) {
+    const navItems = mobileNav.querySelectorAll(".mobile-nav__item");
+    navItems.forEach((item) => {
+      const navType = item.dataset.nav;
+      const isActive = (currentView === "weeklySets" && navType === "weeklySets");
+      if (isActive) {
+        item.setAttribute("aria-current", "page");
+        item.classList.add("mobile-nav__item--active");
+      } else if (navType === "weeklySets") {
+        item.removeAttribute("aria-current");
+        item.classList.remove("mobile-nav__item--active");
+      }
+    });
+  }
+
+  // Update PC nav for weeklySets
+  if (globalNav) {
+    const navLinks = globalNav.querySelectorAll(".global-nav__link");
+    navLinks.forEach((link) => {
+      const navType = link.dataset.nav;
+      const isActive = (currentView === "weeklySets" && navType === "weeklySets");
+      if (isActive) {
+        link.setAttribute("aria-current", "page");
+        link.classList.add("global-nav__link--active");
+      } else if (navType === "weeklySets") {
+        link.removeAttribute("aria-current");
+        link.classList.remove("global-nav__link--active");
+      }
+    });
+  }
+};
+
+// Extend syncViewFromHash for weeklySets
+const originalSyncViewFromHash = syncViewFromHash;
+window.syncViewFromHash = function() {
+  const hash = window.location.hash;
+  if (hash === "#weeklySets") {
+    openWeeklySetsView({ scroll: false });
+    return;
+  }
+  originalSyncViewFromHash();
+};
+
+// Override openAppView to update applied set banner
+const previousOpenAppView = window.openAppView;
+window.openAppView = function(options) {
+  previousOpenAppView.call(this, options);
+  updateAppliedSetBanner();
+};
+
+// Initialize applied set banner on page load
+setTimeout(() => {
+  updateAppliedSetBanner();
+}, 100);
+
+// Escape key to close modals
+window.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  if (!setDetailModal.hidden) {
+    closeSetDetailModal();
+  }
+  if (!setApplyModal.hidden) {
+    closeSetApplyModal();
+  }
+  if (!saveMySetModal.hidden) {
+    closeSaveMySetModal();
+  }
+});
