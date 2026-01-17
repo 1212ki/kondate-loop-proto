@@ -2963,6 +2963,7 @@ const cancelSaveMySet = document.getElementById("cancelSaveMySet");
 const appliedSetBanner = document.getElementById("appliedSetBanner");
 const appliedSetName = document.getElementById("appliedSetName");
 const saveAsMySet = document.getElementById("saveAsMySet");
+const clearAppliedSet = document.getElementById("clearAppliedSet");
 const applySetFromKondate = document.getElementById("applySetFromKondate");
 
 // Navigation elements for weekly sets
@@ -3466,6 +3467,21 @@ function updateAppliedSetBanner() {
   }
 }
 
+// Clear applied set (remove set assignment from current week)
+function clearAppliedSetAction() {
+  const appliedSet = loadAppliedSet(currentWeekStart);
+  if (!appliedSet) return;
+
+  // Remove the applied set info
+  const key = `${APPLIED_SET_KEY_PREFIX}${formatDate(currentWeekStart)}`;
+  localStorage.removeItem(key);
+
+  // Update banner
+  updateAppliedSetBanner();
+
+  showToast("セットの適用を取り消しました", "info");
+}
+
 // Save current week as my set
 function openSaveMySetModal() {
   mySetName.value = "";
@@ -3613,6 +3629,9 @@ if (confirmSaveMySet) {
 // Applied set banner events
 if (saveAsMySet) {
   saveAsMySet.addEventListener("click", openSaveMySetModal);
+}
+if (clearAppliedSet) {
+  clearAppliedSet.addEventListener("click", clearAppliedSetAction);
 }
 if (applySetFromKondate) {
   applySetFromKondate.addEventListener("click", () => {

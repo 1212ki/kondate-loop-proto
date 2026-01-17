@@ -1275,7 +1275,7 @@ button:disabled {
 
 /* Collapsible shopping list */
 .checklist-collapsible {
-  margin-top: var(--space-xl);
+  margin-bottom: var(--space-lg);
   border-radius: var(--radius-xl);
   background: var(--surface-elevated);
   border: 1px solid var(--border-subtle);
@@ -3233,11 +3233,18 @@ button:focus-visible {
   .modal__panel {
     width: 100%;
     max-width: none;
-    max-height: 92vh;
+    max-height: 85vh;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     padding: var(--space-md);
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
     margin: 0;
+    display: flex;
+    flex-direction: column;
     animation: modal-slide-up 0.4s var(--ease-out-expo);
+  }
+
+  .modal__panel--small {
+    max-height: 70vh;
   }
 
   @keyframes modal-slide-up {
@@ -3253,14 +3260,35 @@ button:focus-visible {
 
   .modal__header {
     padding-bottom: var(--space-sm);
-    position: sticky;
-    top: 0;
-    background: var(--surface-elevated);
-    z-index: 1;
+    flex-shrink: 0;
   }
 
   .modal__header h2 {
     font-size: 1.1rem;
+  }
+
+  .modal__body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal__footer {
+    flex-shrink: 0;
+    padding: var(--space-md);
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
+    margin: 0 calc(-1 * var(--space-md));
+    margin-bottom: calc(-1 * max(var(--space-md), env(safe-area-inset-bottom)));
+    background: var(--surface-elevated);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .modal__footer button {
+    width: 100%;
+    padding: var(--space-md);
   }
 
   /* Footer hidden on mobile (nav replaces it) */

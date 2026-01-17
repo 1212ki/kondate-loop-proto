@@ -148,40 +148,8 @@
           </div>
         </header>
 
-        <!-- Applied Set Banner -->
-        <div class="applied-set-banner" id="appliedSetBanner" hidden>
-          <div class="applied-set-banner__content">
-            <span class="material-symbols-rounded">date_range</span>
-            <span class="applied-set-banner__text">今週は <strong id="appliedSetName"></strong></span>
-          </div>
-          <div class="applied-set-banner__actions">
-            <button type="button" class="button--ghost button--small" id="saveAsMySet">マイセットとして保存</button>
-          </div>
-        </div>
-
         <main class="app-content">
-          <section class="controls">
-            <div class="controls__left">
-              <label class="control" for="weekStart">
-                <span>週の開始日</span>
-                <input id="weekStart" type="date" />
-              </label>
-              <div class="controls__buttons">
-                <button type="button" id="prevWeek">前週</button>
-                <button type="button" class="button--primary" id="thisWeek">今週</button>
-                <button type="button" id="nextWeek">次週</button>
-              </div>
-            </div>
-            <div class="controls__right">
-              <div class="week-range" id="weekRange"></div>
-              <div class="save-status" id="saveStatus">保存済み</div>
-              <button type="button" class="button--ghost button--small" id="applySetFromKondate">セットを適用</button>
-              <button type="button" class="button--ghost button--small" id="clearWeek">クリア</button>
-            </div>
-          </section>
-
-          <section class="week-grid" id="weekGrid" aria-live="polite"></section>
-
+          <!-- 1. 食材リスト（折りたたみ可能） -->
           <details class="checklist-collapsible" id="shoppingCollapsible">
             <summary class="checklist-collapsible__toggle">
               <span class="material-symbols-rounded">shopping_cart</span>
@@ -205,6 +173,42 @@
               </p>
             </section>
           </details>
+
+          <!-- 2. 週の開始日・操作ボタン -->
+          <section class="controls">
+            <div class="controls__left">
+              <label class="control" for="weekStart">
+                <span>週の開始日</span>
+                <input id="weekStart" type="date" />
+              </label>
+              <div class="controls__buttons">
+                <button type="button" id="prevWeek">前週</button>
+                <button type="button" class="button--primary" id="thisWeek">今週</button>
+                <button type="button" id="nextWeek">次週</button>
+              </div>
+            </div>
+            <div class="controls__right">
+              <div class="week-range" id="weekRange"></div>
+              <div class="save-status" id="saveStatus">保存済み</div>
+              <button type="button" class="button--ghost button--small" id="applySetFromKondate">セットを適用</button>
+              <button type="button" class="button--ghost button--small" id="clearWeek">クリア</button>
+            </div>
+          </section>
+
+          <!-- 3. テーマ献立バナー（適用時のみ表示） -->
+          <div class="applied-set-banner" id="appliedSetBanner" hidden>
+            <div class="applied-set-banner__content">
+              <span class="material-symbols-rounded">date_range</span>
+              <span class="applied-set-banner__text">今週は <strong id="appliedSetName"></strong></span>
+            </div>
+            <div class="applied-set-banner__actions">
+              <button type="button" class="button--ghost button--small" id="saveAsMySet">マイセットとして保存</button>
+              <button type="button" class="button--ghost button--small button--danger" id="clearAppliedSet">取り消し</button>
+            </div>
+          </div>
+
+          <!-- 4. 毎日の献立 -->
+          <section class="week-grid" id="weekGrid" aria-live="polite"></section>
         </main>
 
         <footer class="footer">
