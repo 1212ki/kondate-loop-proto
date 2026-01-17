@@ -3,6 +3,7 @@ const landingSection = document.getElementById("landing");
 const appSection = document.getElementById("app");
 const recipesSection = document.getElementById("recipes");
 const publicRecipesSection = document.getElementById("publicRecipes");
+const weeklySetsSection = document.getElementById("weeklySets");
 const enterAppButton = document.getElementById("enterApp");
 const enterRecipesButton = document.getElementById("enterRecipes");
 const backToLandingButton = document.getElementById("backToLanding");
@@ -1430,7 +1431,7 @@ function openRecipesView({ scroll } = { scroll: true }) {
   appSection.hidden = true;
   recipesSection.hidden = false;
   publicRecipesSection.hidden = true;
-  if (weeklySetsSection) weeklySetsSection.hidden = true;
+  weeklySetsSection.hidden = true;
   renderTagFilter();
   renderRecipeList();
   if (scroll) {
@@ -1443,7 +1444,7 @@ function openAppView({ scroll } = { scroll: true }) {
   appSection.hidden = false;
   recipesSection.hidden = true;
   publicRecipesSection.hidden = true;
-  if (weeklySetsSection) weeklySetsSection.hidden = true;
+  weeklySetsSection.hidden = true;
   if (scroll) {
     appSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1454,7 +1455,7 @@ function openLandingView() {
   appSection.hidden = true;
   recipesSection.hidden = true;
   publicRecipesSection.hidden = true;
-  if (weeklySetsSection) weeklySetsSection.hidden = true;
+  weeklySetsSection.hidden = true;
 }
 
 function openPublicRecipesView({ scroll } = { scroll: true }) {
@@ -1462,7 +1463,7 @@ function openPublicRecipesView({ scroll } = { scroll: true }) {
   appSection.hidden = true;
   recipesSection.hidden = true;
   publicRecipesSection.hidden = false;
-  if (weeklySetsSection) weeklySetsSection.hidden = true;
+  weeklySetsSection.hidden = true;
   renderPublicRecipes();
   renderPublicTagFilter();
   if (scroll) {
@@ -2376,7 +2377,8 @@ function updateNavigation(currentView) {
       const navType = item.dataset.nav;
       const isActive = (currentView === "app" && navType === "kondate") ||
                        (currentView === "recipes" && navType === "recipes") ||
-                       (currentView === "publicRecipes" && navType === "publicRecipes");
+                       (currentView === "publicRecipes" && navType === "publicRecipes") ||
+                       (currentView === "weeklySets" && navType === "weeklySets");
       if (isActive) {
         item.setAttribute("aria-current", "page");
         item.classList.add("mobile-nav__item--active");
@@ -2394,7 +2396,8 @@ function updateNavigation(currentView) {
       const navType = link.dataset.nav;
       const isActive = (currentView === "app" && navType === "kondate") ||
                        (currentView === "recipes" && navType === "recipes") ||
-                       (currentView === "publicRecipes" && navType === "publicRecipes");
+                       (currentView === "publicRecipes" && navType === "publicRecipes") ||
+                       (currentView === "weeklySets" && navType === "weeklySets");
       if (isActive) {
         link.setAttribute("aria-current", "page");
         link.classList.add("global-nav__link--active");
@@ -2543,20 +2546,24 @@ function renderShoppingListWithBadge() {
 // Replace the renderShoppingList reference
 window.renderShoppingList = renderShoppingListWithBadge;
 
+// Helper to get current view
+function getCurrentView() {
+  if (!landingSection.hidden) return "landing";
+  if (!appSection.hidden) return "app";
+  if (!recipesSection.hidden) return "recipes";
+  if (!publicRecipesSection.hidden) return "publicRecipes";
+  if (weeklySetsSection && !weeklySetsSection.hidden) return "weeklySets";
+  return "landing";
+}
+
 // Update on resize
 window.addEventListener("resize", () => {
-  const currentView = !landingSection.hidden ? "landing" :
-                      !appSection.hidden ? "app" :
-                      !recipesSection.hidden ? "recipes" : "publicRecipes";
-  updateMobileNav(currentView);
+  updateMobileNav(getCurrentView());
 });
 
 // Initial mobile nav state
 function initMobileNav() {
-  const currentView = !landingSection.hidden ? "landing" :
-                      !appSection.hidden ? "app" :
-                      !recipesSection.hidden ? "recipes" : "publicRecipes";
-  updateMobileNav(currentView);
+  updateMobileNav(getCurrentView());
 }
 
 // Run after initial render
@@ -2899,8 +2906,7 @@ const FAVORITE_SETS_KEY = "favorite-sets-v1";
 const MY_SETS_KEY = "my-sets-v1";
 const APPLIED_SET_KEY_PREFIX = "applied-set-";
 
-// Weekly Sets section elements
-const weeklySetsSection = document.getElementById("weeklySets");
+// Weekly Sets section elements (weeklySetsSection is defined at the top)
 const setCount = document.getElementById("setCount");
 const favoriteSetCount = document.getElementById("favoriteSetCount");
 const favoriteSetsSection = document.getElementById("favoriteSetsSection");
@@ -3152,6 +3158,7 @@ function openWeeklySetsView({ scroll } = { scroll: true }) {
 
   renderWeeklySets();
   updateFavoriteCount();
+  updateNavigation("weeklySets");
 
   if (scroll) {
     weeklySetsSection.scrollIntoView({ behavior: "smooth" });
@@ -3594,56 +3601,6 @@ if (applySetFromKondate) {
     history.replaceState(null, "", "#weeklySets");
   });
 }
-
-// Extend handleNavClick for weeklySets
-const originalHandleNavClick = handleNavClick;
-window.handleNavClick = function(navType) {
-  if (navType === "weeklySets") {
-    openWeeklySetsView({ scroll: false });
-    history.replaceState(null, "", "#weeklySets");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  } else {
-    originalHandleNavClick(navType);
-  }
-};
-
-// Extend updateNavigation for weeklySets
-const originalUpdateNavigation = updateNavigation;
-window.updateNavigation = function(currentView) {
-  originalUpdateNavigation(currentView);
-
-  // Update mobile nav for weeklySets
-  if (mobileNav) {
-    const navItems = mobileNav.querySelectorAll(".mobile-nav__item");
-    navItems.forEach((item) => {
-      const navType = item.dataset.nav;
-      const isActive = (currentView === "weeklySets" && navType === "weeklySets");
-      if (isActive) {
-        item.setAttribute("aria-current", "page");
-        item.classList.add("mobile-nav__item--active");
-      } else if (navType === "weeklySets") {
-        item.removeAttribute("aria-current");
-        item.classList.remove("mobile-nav__item--active");
-      }
-    });
-  }
-
-  // Update PC nav for weeklySets
-  if (globalNav) {
-    const navLinks = globalNav.querySelectorAll(".global-nav__link");
-    navLinks.forEach((link) => {
-      const navType = link.dataset.nav;
-      const isActive = (currentView === "weeklySets" && navType === "weeklySets");
-      if (isActive) {
-        link.setAttribute("aria-current", "page");
-        link.classList.add("global-nav__link--active");
-      } else if (navType === "weeklySets") {
-        link.removeAttribute("aria-current");
-        link.classList.remove("global-nav__link--active");
-      }
-    });
-  }
-};
 
 // Extend syncViewFromHash for weeklySets
 const originalSyncViewFromHash = syncViewFromHash;
