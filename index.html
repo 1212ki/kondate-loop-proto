@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>献立プロト v2</title>
+  <title>kondate loop</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -44,23 +44,28 @@
     <div id="screen-main" class="screen">
       <header class="header header-main">
         <div class="header-logo">
-          <span class="logo-icon">🍳</span>
+          <span class="logo-icon">🍽️</span>
           <span class="logo-text">kondate loop</span>
         </div>
-        <div class="header-actions">
+        <div class="header-actions-single">
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-main"></span>
-          </button>
-          <button class="header-action has-badge" onclick="App.showScreen('shopping')">
-            <span class="material-icons-round">shopping_cart</span>
-            <span class="action-badge" id="badge-shopping-main"></span>
           </button>
         </div>
       </header>
 
       <main class="main-content with-nav">
-        <h2 class="screen-title">献立</h2>
+        <h2 class="screen-title">こんだて表</h2>
+        <!-- 買い物リストボタン（空でない時のみ表示） -->
+        <div id="shopping-list-button" class="shopping-list-button hidden">
+          <button class="btn-shopping-list" onclick="App.showShoppingPopup()">
+            <span class="material-icons-round">shopping_cart</span>
+            <span>買い物リスト</span>
+            <span class="shopping-count" id="shopping-count-main"></span>
+          </button>
+        </div>
+
         <!-- 現在のセットがない場合 -->
         <div id="empty-state" class="empty-state">
           <div class="empty-illustration">🃏</div>
@@ -77,23 +82,17 @@
             <span class="pool-label" id="current-set-name">セット名</span>
             <button class="btn-text" onclick="App.clearCurrentSet()">リセット</button>
           </div>
-          <div class="cards-container" id="pool-cards">
-            <!-- カードがここに入る -->
+          <div class="scroll-hint-container">
+            <div class="cards-container" id="pool-cards">
+              <!-- カードがここに入る -->
+            </div>
+            <div class="scroll-hint"></div>
           </div>
           <div class="pool-actions">
             <button class="btn-secondary" onclick="App.showScreen('set-select')">
               セットを変える
             </button>
           </div>
-        </div>
-
-        <!-- 冷蔵庫への導線 -->
-        <div id="fridge-shortcut" class="fridge-shortcut hidden">
-          <button class="btn-fridge" onclick="App.showFridge()">
-            <span class="fridge-icon">🧊</span>
-            <span>冷蔵庫を見る</span>
-            <span class="fridge-badge" id="fridge-count"></span>
-          </button>
         </div>
 
         <!-- 次の献立 -->
@@ -121,16 +120,16 @@
 
       <nav class="bottom-nav">
         <button class="nav-item active" onclick="App.showScreen('main')">
-          <span class="material-icons-round">style</span>
-          <span class="nav-label">献立</span>
+          <span class="material-icons-round">calendar_view_week</span>
+          <span class="nav-label">こんだて表</span>
         </button>
         <button class="nav-item" onclick="App.showScreen('recipes')">
           <span class="material-icons-round">menu_book</span>
-          <span class="nav-label">わたしの</span>
+          <span class="nav-label">レシピ帳</span>
         </button>
         <button class="nav-item" onclick="App.showScreen('public')">
           <span class="material-icons-round">explore</span>
-          <span class="nav-label">みんなの</span>
+          <span class="nav-label">レシピカタログ</span>
         </button>
       </nav>
     </div>
@@ -138,26 +137,41 @@
     <!-- 1.5 セット選択画面 -->
     <div id="screen-set-select" class="screen">
       <header class="header header-sub">
-        <button class="header-back" onclick="App.showScreen('main')">
+        <button class="header-back" onclick="App.goBack()">
           <span class="material-icons-round">arrow_back</span>
         </button>
-        <h1 class="header-title">セット選択</h1>
-        <div class="header-spacer-sm"></div>
+        <div class="header-logo">
+          <span class="logo-icon">🍽️</span>
+          <span class="logo-text">kondate loop</span>
+        </div>
       </header>
 
       <main class="main-content with-header">
-        <p class="section-description">セットを選択</p>
+        <h2 class="screen-title">セット選択</h2>
 
-        <div class="set-list" id="set-list">
-          <!-- セット一覧がここに入る -->
+        <div class="tab-switcher">
+          <button class="tab-btn active" data-tab="set-my" onclick="App.switchSetSelectTab('my')">レシピ帳</button>
+          <button class="tab-btn" data-tab="set-public" onclick="App.switchSetSelectTab('public')">レシピカタログ</button>
         </div>
 
-        <div class="create-set-prompt">
-          <p>好きなレシピでセットを作る？</p>
-          <button class="btn-secondary" onclick="App.showScreen('set-create')">
-            <span class="material-icons-round">add</span>
-            新しいセットを作る
-          </button>
+        <div id="set-select-my" class="tab-content">
+          <div class="set-list" id="set-list-my">
+            <!-- 自分のセット一覧がここに入る -->
+          </div>
+
+          <div class="create-set-prompt">
+            <p>好きなレシピでセットを作る？</p>
+            <button class="btn-secondary" onclick="App.showScreen('set-create')">
+              <span class="material-icons-round">add</span>
+              新しいセットを作る
+            </button>
+          </div>
+        </div>
+
+        <div id="set-select-public" class="tab-content hidden">
+          <div class="set-list" id="set-list-public">
+            <!-- 公開セット一覧がここに入る -->
+          </div>
         </div>
       </main>
     </div>
@@ -165,14 +179,26 @@
     <!-- 2. レシピSet作成画面 -->
     <div id="screen-set-create" class="screen">
       <header class="header header-sub">
-        <button class="header-back" onclick="App.showScreen('set-select')">
+        <button class="header-back" onclick="App.goBack()">
           <span class="material-icons-round">arrow_back</span>
         </button>
-        <h1 class="header-title">セットを作る</h1>
-        <div class="header-spacer-sm"></div>
+        <div class="header-logo">
+          <span class="logo-icon">🍽️</span>
+          <span class="logo-text">kondate loop</span>
+        </div>
       </header>
 
       <main class="main-content with-header">
+        <h2 class="screen-title">セットを作る</h2>
+
+        <!-- 既存のセットから始めるオプション -->
+        <div class="copy-from-existing">
+          <button class="btn-copy-from-set" onclick="App.showSetTemplateSelector()">
+            <span class="material-icons-round">content_copy</span>
+            既存のセットから編集
+          </button>
+        </div>
+
         <div class="set-create-form">
           <div class="form-group">
             <label class="form-label">セットの名前</label>
@@ -205,11 +231,14 @@
         <button class="header-back" onclick="App.goBackFromRecipeAdd()">
           <span class="material-icons-round">arrow_back</span>
         </button>
-        <h1 class="header-title">レシピを追加</h1>
-        <div class="header-spacer-sm"></div>
+        <div class="header-logo">
+          <span class="logo-icon">🍽️</span>
+          <span class="logo-text">kondate loop</span>
+        </div>
       </header>
 
       <main class="main-content with-header">
+        <h2 class="screen-title">レシピを追加</h2>
         <!-- 反映エリア -->
         <div class="import-area">
           <label class="form-label">URLまたはテキストから取り込み</label>
@@ -249,6 +278,17 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label">作り方</label>
+            <div class="steps-list" id="steps-list">
+              <!-- 手順入力欄 -->
+            </div>
+            <button class="btn-add-ingredient" onclick="App.addStepRow()">
+              <span class="material-icons-round">add</span>
+              手順を追加
+            </button>
+          </div>
+
+          <div class="form-group">
             <label class="form-label">URL（あれば）</label>
             <input type="url" id="recipe-url-input" class="form-input" placeholder="https://...">
           </div>
@@ -277,83 +317,105 @@
     <div id="screen-recipes" class="screen">
       <header class="header header-main">
         <div class="header-logo">
-          <span class="logo-icon">🍳</span>
+          <span class="logo-icon">🍽️</span>
           <span class="logo-text">kondate loop</span>
-        </div>
-        <div class="header-actions">
-          <button class="header-action has-badge" onclick="App.showFridge()">
-            <span class="material-icons-round">kitchen</span>
-            <span class="action-badge" id="badge-fridge-recipes"></span>
-          </button>
-          <button class="header-action has-badge" onclick="App.showScreen('shopping')">
-            <span class="material-icons-round">shopping_cart</span>
-            <span class="action-badge" id="badge-shopping-recipes"></span>
-          </button>
         </div>
       </header>
 
       <main class="main-content with-nav">
-        <h2 class="screen-title">わたしのMenu</h2>
+        <div class="content-wrapper">
+          <h2 class="screen-title">レシピ帳</h2>
+          <!-- 検索バー -->
+          <div class="search-box" style="margin-bottom: var(--space-md);">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="recipe-search" class="search-input" placeholder="キーワードで検索" oninput="App.filterMyItems()">
+          </div>
+          <!-- レシピ/セット タブ -->
+          <div class="tab-switcher">
+            <button class="tab-btn active" data-tab="my-recipes" onclick="App.switchMyTab('recipes')">レシピ</button>
+            <button class="tab-btn" data-tab="my-sets" onclick="App.switchMyTab('sets')">セット</button>
+          </div>
 
-        <!-- レシピ/セット タブ -->
-        <div class="tab-switcher">
-          <button class="tab-btn active" data-tab="my-recipes" onclick="App.switchMyTab('recipes')">レシピ</button>
-          <button class="tab-btn" data-tab="my-sets" onclick="App.switchMyTab('sets')">セット</button>
+          <!-- カテゴリ + リストのエリア -->
+          <div class="category-list-area">
+            <!-- 左: カテゴリサイドバー（縦並び） -->
+            <aside class="category-sidebar-inline" id="my-category-sidebar">
+              <button class="category-tab active" data-category="all" onclick="App.selectMyCategory('all')">
+                <span>全て</span>
+              </button>
+              <button class="category-tab" data-category="和食" onclick="App.selectMyCategory('和食')">
+                <span>和食</span>
+              </button>
+              <button class="category-tab" data-category="洋食" onclick="App.selectMyCategory('洋食')">
+                <span>洋食</span>
+              </button>
+              <button class="category-tab" data-category="中華" onclick="App.selectMyCategory('中華')">
+                <span>中華</span>
+              </button>
+              <button class="category-tab" data-category="時短" onclick="App.selectMyCategory('時短')">
+                <span>時短</span>
+              </button>
+            </aside>
+
+            <!-- 右: リストエリア -->
+            <div class="list-area">
+              <!-- レシピタブ -->
+              <div id="my-recipes-tab" class="tab-content">
+                <div class="recipe-list" id="recipe-list">
+                  <!-- レシピ一覧 -->
+                </div>
+                <div id="recipes-empty" class="empty-state hidden">
+                  <div class="empty-illustration">📝</div>
+                  <p class="empty-text">レシピがありません</p>
+                  <p class="empty-subtext">右下の＋から追加できます</p>
+                </div>
+              </div>
+
+              <!-- セットタブ -->
+              <div id="my-sets-tab" class="tab-content hidden">
+                <div class="set-list" id="my-set-list">
+                  <!-- セット一覧 -->
+                </div>
+                <div id="my-sets-empty" class="empty-state hidden">
+                  <div class="empty-illustration">📦</div>
+                  <p class="empty-text">セットがありません</p>
+                  <p class="empty-subtext">右下の＋から作成できます</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- 追加ボタン -->
-        <button class="btn-add-item" id="btn-add-my" onclick="App.showAddForMyTab()">
+        <!-- FAB（Floating Action Button） -->
+        <button class="fab" id="fab-my" onclick="App.showFabMenu()">
           <span class="material-icons-round">add</span>
-          <span id="btn-add-my-label">レシピを追加</span>
         </button>
 
-        <div class="search-box">
-          <span class="material-icons-round">search</span>
-          <input type="text" id="recipe-search" class="search-input" placeholder="レシピを探す" oninput="App.filterMyItems()">
-        </div>
-
-        <!-- タグフィルター（レシピタブ用） -->
-        <div class="tags-filter" id="my-tags-filter">
-          <!-- タグボタンがここに動的に入る -->
-        </div>
-
-        <!-- レシピタブ -->
-        <div id="my-recipes-tab" class="tab-content">
-          <div class="recipe-list" id="recipe-list">
-            <!-- レシピ一覧 -->
-          </div>
-          <div id="recipes-empty" class="empty-state hidden">
-            <div class="empty-illustration">📝</div>
-            <p class="empty-text">レシピがありません</p>
-            <p class="empty-subtext">レシピを追加してみよう</p>
-          </div>
-        </div>
-
-        <!-- セットタブ -->
-        <div id="my-sets-tab" class="tab-content hidden">
-          <div class="set-list" id="my-set-list">
-            <!-- セット一覧 -->
-          </div>
-          <div id="my-sets-empty" class="empty-state hidden">
-            <div class="empty-illustration">📦</div>
-            <p class="empty-text">セットがありません</p>
-            <p class="empty-subtext">レシピをまとめてセットを作ろう</p>
-          </div>
+        <!-- FABメニュー -->
+        <div class="fab-menu hidden" id="fab-menu">
+          <button class="fab-menu-item" onclick="App.showScreen('set-create')">
+            <span class="material-icons-round">library_add</span>
+            <span>セットを作成</span>
+          </button>
+          <button class="fab-menu-item" onclick="App.showScreen('recipe-add')">
+            <span class="material-icons-round">note_add</span>
+            <span>レシピを追加</span>
+          </button>
         </div>
       </main>
 
       <nav class="bottom-nav">
         <button class="nav-item" onclick="App.showScreen('main')">
-          <span class="material-icons-round">style</span>
-          <span class="nav-label">献立</span>
+          <span class="material-icons-round">calendar_view_week</span>
+          <span class="nav-label">こんだて表</span>
         </button>
         <button class="nav-item active" onclick="App.showScreen('recipes')">
           <span class="material-icons-round">menu_book</span>
-          <span class="nav-label">わたしの</span>
+          <span class="nav-label">レシピ帳</span>
         </button>
         <button class="nav-item" onclick="App.showScreen('public')">
           <span class="material-icons-round">explore</span>
-          <span class="nav-label">みんなの</span>
+          <span class="nav-label">レシピカタログ</span>
         </button>
       </nav>
     </div>
@@ -361,26 +423,25 @@
     <!-- 5. 買い物リスト画面 -->
     <div id="screen-shopping" class="screen">
       <header class="header header-sub">
-        <button class="header-back" onclick="App.showScreen('main')">
+        <button class="header-back" onclick="App.goBack()">
           <span class="material-icons-round">arrow_back</span>
         </button>
-        <h1 class="header-title">買うもの</h1>
-        <div class="header-spacer-sm"></div>
+        <div class="header-logo">
+          <span class="logo-icon">🍽️</span>
+          <span class="logo-text">kondate loop</span>
+        </div>
       </header>
 
       <main class="main-content with-header">
+        <h2 class="screen-title">買うもの</h2>
         <div id="shopping-list" class="shopping-list">
           <!-- 買い物リスト -->
         </div>
 
         <div id="shopping-actions" class="shopping-actions hidden">
-          <button id="btn-purchase-checked" class="btn-secondary" onclick="App.purchaseChecked()">
-            <span class="material-icons-round">check</span>
-            チェック済みを購入
-          </button>
-          <button class="btn-primary" onclick="App.purchaseAll()">
-            <span class="material-icons-round">done_all</span>
-            全部買った
+          <button id="btn-purchase" class="btn-primary" onclick="App.purchaseChecked()" disabled>
+            <span class="material-icons-round">done</span>
+            買った
           </button>
         </div>
 
@@ -396,70 +457,81 @@
     <div id="screen-public" class="screen">
       <header class="header header-main">
         <div class="header-logo">
-          <span class="logo-icon">🍳</span>
+          <span class="logo-icon">🍽️</span>
           <span class="logo-text">kondate loop</span>
-        </div>
-        <div class="header-actions">
-          <button class="header-action has-badge" onclick="App.showFridge()">
-            <span class="material-icons-round">kitchen</span>
-            <span class="action-badge" id="badge-fridge-public"></span>
-          </button>
-          <button class="header-action has-badge" onclick="App.showScreen('shopping')">
-            <span class="material-icons-round">shopping_cart</span>
-            <span class="action-badge" id="badge-shopping-public"></span>
-          </button>
         </div>
       </header>
 
       <main class="main-content with-nav">
-        <h2 class="screen-title">みんなのMenu</h2>
-
-        <!-- レシピ/セット タブ -->
-        <div class="tab-switcher">
-          <button class="tab-btn active" data-tab="public-recipes" onclick="App.switchPublicTab('recipes')">レシピ</button>
-          <button class="tab-btn" data-tab="public-sets" onclick="App.switchPublicTab('sets')">セット</button>
-        </div>
-
-        <div class="search-box">
-          <span class="material-icons-round">search</span>
-          <input type="text" id="public-search" class="search-input" placeholder="探す" oninput="App.filterPublicItems()">
-        </div>
-
-        <div class="tags-filter" id="public-tags-filter">
-          <button class="tag-filter-btn active" data-tag="all">すべて</button>
-          <button class="tag-filter-btn" data-tag="和食">和食</button>
-          <button class="tag-filter-btn" data-tag="洋食">洋食</button>
-          <button class="tag-filter-btn" data-tag="中華">中華</button>
-          <button class="tag-filter-btn" data-tag="時短">時短</button>
-        </div>
-
-        <!-- レシピタブ -->
-        <div id="public-recipes-tab" class="tab-content">
-          <div class="public-recipe-list" id="public-recipe-list">
-            <!-- 公開レシピ一覧 -->
+        <div class="content-wrapper">
+          <h2 class="screen-title">レシピカタログ</h2>
+          <!-- 検索バー -->
+          <div class="search-box" style="margin-bottom: var(--space-md);">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="public-search" class="search-input" placeholder="キーワードで検索" oninput="App.filterPublicItems()">
           </div>
-        </div>
+          <!-- レシピ/セット タブ -->
+          <div class="tab-switcher">
+            <button class="tab-btn active" data-tab="public-recipes" onclick="App.switchPublicTab('recipes')">レシピ</button>
+            <button class="tab-btn" data-tab="public-sets" onclick="App.switchPublicTab('sets')">セット</button>
+          </div>
 
-        <!-- セットタブ -->
-        <div id="public-sets-tab" class="tab-content hidden">
-          <div class="public-set-list" id="public-set-list">
-            <!-- 公開セット一覧（料理家のセット等） -->
+          <!-- カテゴリ + リストのエリア -->
+          <div class="category-list-area">
+            <!-- 左: カテゴリサイドバー（縦並び） -->
+            <aside class="category-sidebar-inline" id="public-category-sidebar">
+              <button class="category-tab active" data-category="all" onclick="App.selectPublicCategory('all')">
+                <span>全て</span>
+              </button>
+              <button class="category-tab" data-category="和食" onclick="App.selectPublicCategory('和食')">
+                <span>和食</span>
+              </button>
+              <button class="category-tab" data-category="洋食" onclick="App.selectPublicCategory('洋食')">
+                <span>洋食</span>
+              </button>
+              <button class="category-tab" data-category="中華" onclick="App.selectPublicCategory('中華')">
+                <span>中華</span>
+              </button>
+              <button class="category-tab" data-category="韓国" onclick="App.selectPublicCategory('韓国')">
+                <span>韓国</span>
+              </button>
+              <button class="category-tab" data-category="時短" onclick="App.selectPublicCategory('時短')">
+                <span>時短</span>
+              </button>
+            </aside>
+
+            <!-- 右: リストエリア -->
+            <div class="list-area">
+              <!-- レシピタブ -->
+              <div id="public-recipes-tab" class="tab-content">
+                <div class="public-recipe-list" id="public-recipe-list">
+                  <!-- 公開レシピ一覧 -->
+                </div>
+              </div>
+
+              <!-- セットタブ -->
+              <div id="public-sets-tab" class="tab-content hidden">
+                <div class="public-set-list" id="public-set-list">
+                  <!-- 公開セット一覧（料理家のセット等） -->
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
 
       <nav class="bottom-nav">
         <button class="nav-item" onclick="App.showScreen('main')">
-          <span class="material-icons-round">style</span>
-          <span class="nav-label">献立</span>
+          <span class="material-icons-round">calendar_view_week</span>
+          <span class="nav-label">こんだて表</span>
         </button>
         <button class="nav-item" onclick="App.showScreen('recipes')">
           <span class="material-icons-round">menu_book</span>
-          <span class="nav-label">わたしの</span>
+          <span class="nav-label">レシピ帳</span>
         </button>
         <button class="nav-item active" onclick="App.showScreen('public')">
           <span class="material-icons-round">explore</span>
-          <span class="nav-label">みんなの</span>
+          <span class="nav-label">レシピカタログ</span>
         </button>
       </nav>
     </div>
@@ -477,8 +549,8 @@
         <div class="modal-body">
           <!-- タブ切替 -->
           <div class="tab-switcher" id="selector-tab-switcher">
-            <button class="tab-btn active" data-tab="my" onclick="App.switchSelectorTab('my')">わたしの</button>
-            <button class="tab-btn" data-tab="public" onclick="App.switchSelectorTab('public')">みんなの</button>
+            <button class="tab-btn active" data-tab="my" onclick="App.switchSelectorTab('my')">レシピ帳</button>
+            <button class="tab-btn" data-tab="public" onclick="App.switchSelectorTab('public')">レシピカタログ</button>
           </div>
           <div class="search-box">
             <span class="material-icons-round">search</span>
@@ -491,6 +563,25 @@
             <span class="material-icons-round">add</span>
             新しいレシピを追加
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- セットテンプレート選択モーダル -->
+    <div id="modal-set-template" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeSetTemplateModal()"></div>
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2 class="modal-title">セットを選択</h2>
+          <button class="modal-close" onclick="App.closeSetTemplateModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-guide-text">既存のセットをもとに新しいセットを作成します</p>
+          <div class="set-template-list" id="set-template-list">
+            <!-- セット一覧がここに入る -->
+          </div>
         </div>
       </div>
     </div>
@@ -524,6 +615,95 @@
         <div class="modal-body" id="fridge-body">
           <!-- 冷蔵庫の中身 -->
         </div>
+        <div class="modal-footer fridge-footer">
+          <button class="btn-text-icon" onclick="App.showDeletedFridgeItems()">
+            <span class="material-icons-round">history</span>
+          </button>
+          <button class="btn-primary" onclick="App.showAddFridgeItem()">
+            <span class="material-icons-round">add</span>
+            食材を追加
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 削除履歴モーダル -->
+    <div id="modal-deleted-fridge" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeDeletedFridgeItems()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">削除した食材</h2>
+          <button class="modal-close" onclick="App.closeDeletedFridgeItems()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body" id="deleted-fridge-body">
+          <!-- 削除履歴 -->
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeDeletedFridgeItems()">戻る</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 食材追加モーダル -->
+    <div id="modal-add-fridge" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.cancelAddFridgeItem()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">食材を追加</h2>
+          <button class="modal-close" onclick="App.cancelAddFridgeItem()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">食材名</label>
+            <input type="text" id="fridge-item-name" class="form-input" placeholder="例: 豚バラ肉">
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">量</label>
+              <input type="number" id="fridge-item-amount" class="form-input" placeholder="200" value="1">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">単位</label>
+              <select id="fridge-item-unit" class="form-input">
+                <option value="個">個</option>
+                <option value="g">g</option>
+                <option value="本">本</option>
+                <option value="枚">枚</option>
+                <option value="パック">パック</option>
+                <option value="袋">袋</option>
+                <option value="丁">丁</option>
+                <option value="切れ">切れ</option>
+                <option value="束">束</option>
+                <option value="かけ">かけ</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.cancelAddFridgeItem()">キャンセル</button>
+          <button class="btn-primary" onclick="App.addFridgeItem()">追加する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 冷蔵庫食材削除確認モーダル -->
+    <div id="modal-confirm-delete-fridge" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.cancelDeleteFridgeItem()"></div>
+      <div class="modal-content modal-small">
+        <div class="modal-body" style="text-align: center; padding: 24px;">
+          <p style="font-size: 16px; margin-bottom: 8px;">
+            <span id="confirm-delete-fridge-name" style="font-weight: 700;"></span>
+          </p>
+          <p style="color: var(--text-sub);">を削除しますか？</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.cancelDeleteFridgeItem()">キャンセル</button>
+          <button class="btn-primary btn-danger" onclick="App.deleteFridgeItem()">削除</button>
+        </div>
       </div>
     </div>
 
@@ -539,6 +719,55 @@
         </div>
         <div class="modal-body" id="detail-set-body">
           <!-- セット詳細 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 買い物リストポップアップ -->
+    <div id="modal-shopping" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2 class="modal-title">🛒 買い物リスト</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body" id="shopping-popup-body">
+          <!-- 買い物リストの中身 -->
+        </div>
+        <div class="modal-footer" id="shopping-popup-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">閉じる</button>
+          <button class="btn-primary" id="btn-reflect-fridge" onclick="App.showReflectOptions()">
+            <span class="material-icons-round">check</span>
+            買った
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 冷蔵庫反映方法選択モーダル -->
+    <div id="modal-reflect-options" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">冷蔵庫に反映します</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="reflect-guide-text">反映方法を選んでください</p>
+          <div class="reflect-options">
+            <button class="btn-option" onclick="App.reflectCheckedToFridge()">
+              <span class="material-icons-round">check_circle</span>
+              <span>チェックした材料を反映</span>
+            </button>
+            <button class="btn-option" onclick="App.showReceiptUpload()">
+              <span class="material-icons-round">receipt_long</span>
+              <span>レシートから反映（準備中）</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

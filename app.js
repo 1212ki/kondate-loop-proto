@@ -16,7 +16,9 @@ const App = {
     setHistory: [],        // 過去の献立履歴 [{set, endedAt, cookedRecipes}]
     cookedRecipes: [],     // 作った料理のID
     shoppingChecked: [],   // チェック済み買い物アイテム
+    shoppingPurchased: [], // 購入済み買い物アイテム（name-unit）
     fridge: [],            // 冷蔵庫の食材 [{name, amount, unit}]
+    deletedFridgeItems: [], // 削除した食材履歴 [{name, amount, unit, deletedAt}]
     selectedRecipesForSet: [], // セット作成時の選択レシピ
     previousScreen: 'main',
   },
@@ -25,6 +27,7 @@ const App = {
   currentMyTab: 'recipes',
   mySelectedTag: null,
   selectorTab: 'my', // レシピ選択モーダルのタブ（my / public）
+  currentSetSelectTab: 'my',
 
   // オンボーディング状態
   onboarding: {
@@ -214,15 +217,79 @@ const App = {
 
   // サンプルセット（セット選択画面用）
   sampleSets: [
+    // スターターセット12個（REQ-003）
+    // 既存のpub-001〜pub-008を使用（将来的にレシピ追加予定）
     {
-      id: 'sample-001',
-      name: '定番おうちごはん',
-      recipeIds: ['pub-001', 'pub-002', 'pub-003', 'pub-006'],
+      id: 'starter-001',
+      name: '平日5日間の時短セット',
+      recipeIds: ['pub-001', 'pub-004', 'pub-005', 'pub-006', 'pub-008'],
+      tags: ['時短', '平日'],
     },
     {
-      id: 'sample-002',
-      name: '時短ウィーク',
-      recipeIds: ['pub-001', 'pub-004', 'pub-005', 'pub-008'],
+      id: 'starter-002',
+      name: '和食の基本セット',
+      recipeIds: ['pub-001', 'pub-002', 'pub-003', 'pub-006', 'pub-007', 'pub-008', 'pub-004'],
+      tags: ['和食', '定番'],
+    },
+    {
+      id: 'starter-003',
+      name: '洋食入門セット',
+      recipeIds: ['pub-007', 'pub-002', 'pub-008', 'pub-004', 'pub-006'],
+      tags: ['洋食', '簡単'],
+    },
+    {
+      id: 'starter-004',
+      name: 'ヘルシー週間セット',
+      recipeIds: ['pub-003', 'pub-007', 'pub-008', 'pub-006', 'pub-004', 'pub-001', 'pub-002'],
+      tags: ['野菜', 'ヘルシー'],
+    },
+    {
+      id: 'starter-005',
+      name: '節約レシピセット',
+      recipeIds: ['pub-001', 'pub-003', 'pub-006', 'pub-004', 'pub-005'],
+      tags: ['節約', '家計'],
+    },
+    {
+      id: 'starter-006',
+      name: '作り置きセット',
+      recipeIds: ['pub-003', 'pub-002', 'pub-006', 'pub-001', 'pub-007'],
+      tags: ['作り置き', '週末'],
+    },
+    {
+      id: 'starter-007',
+      name: '一人暮らし応援セット',
+      recipeIds: ['pub-001', 'pub-004', 'pub-005', 'pub-006', 'pub-008', 'pub-002', 'pub-007'],
+      tags: ['一人暮らし', '簡単'],
+    },
+    {
+      id: 'starter-008',
+      name: '麺づくしセット',
+      recipeIds: ['pub-004', 'pub-005', 'pub-008', 'pub-001', 'pub-006'],
+      tags: ['麺', 'ランチ'],
+    },
+    {
+      id: 'starter-009',
+      name: 'どんぶりセット',
+      recipeIds: ['pub-001', 'pub-002', 'pub-005', 'pub-006', 'pub-004'],
+      tags: ['丼', '簡単'],
+    },
+    {
+      id: 'starter-010',
+      name: '中華セット',
+      recipeIds: ['pub-005', 'pub-004', 'pub-008', 'pub-001', 'pub-006'],
+      tags: ['中華', '定番'],
+    },
+    {
+      id: 'starter-011',
+      name: '煮込み料理セット',
+      recipeIds: ['pub-003', 'pub-002', 'pub-006', 'pub-001', 'pub-007', 'pub-008', 'pub-004'],
+      tags: ['煮込み', 'じっくり'],
+    },
+    {
+      id: 'starter-012',
+      name: '初心者向けセット',
+      recipeIds: ['pub-001', 'pub-004', 'pub-005', 'pub-006', 'pub-007', 'pub-008', 'pub-002'],
+      tags: ['初心者', '基本'],
     },
   ],
 
@@ -281,6 +348,19 @@ const App = {
 
   saveOnboarding() {
     localStorage.setItem('kondate-onboarding', JSON.stringify(this.onboarding));
+  },
+
+  // ========================================
+  // ユーティリティ
+  // ========================================
+  getRecipeById(recipeId) {
+    // 公開レシピから検索
+    let recipe = this.publicRecipes.find(r => r.id === recipeId);
+    if (recipe) return recipe;
+
+    // ユーザーのレシピから検索
+    recipe = this.state.recipes.find(r => r.id === recipeId);
+    return recipe || null;
   },
 
   // ========================================
@@ -427,6 +507,7 @@ const App = {
       currentSet: this.state.currentSet,
       cookedRecipes: this.state.cookedRecipes,
       shoppingChecked: this.state.shoppingChecked,
+      shoppingPurchased: this.state.shoppingPurchased,
       fridge: this.state.fridge,
     }));
     // バッジを更新
@@ -436,6 +517,11 @@ const App = {
   // ========================================
   // 画面遷移
   // ========================================
+  goBack(fallback = 'main') {
+    const target = this.state.previousScreen || fallback;
+    this.showScreen(target);
+  },
+
   showScreen(screenId) {
     // 前の画面を記録
     this.state.previousScreen = this.state.currentScreen;
@@ -530,21 +616,14 @@ const App = {
 
     // 冷蔵庫ショートカットを描画
     this.renderFridgeShortcut();
+
+    // 買い物リストボタンを更新
+    this.updateShoppingListButton();
   },
 
   renderFridgeShortcut() {
-    const shortcut = document.getElementById('fridge-shortcut');
-    const badge = document.getElementById('fridge-count');
-    const fridge = this.state.fridge || [];
-
-    // 現在の献立があるときのみ表示
-    if (!this.state.currentSet) {
-      shortcut.classList.add('hidden');
-      return;
-    }
-
-    shortcut.classList.remove('hidden');
-    badge.textContent = fridge.length > 0 ? `${fridge.length}品` : '';
+    // 冷蔵庫ショートカットは削除されたので何もしない
+    // 冷蔵庫はヘッダーのボタンからアクセス（REQ-014）
   },
 
   renderNextSetSection() {
@@ -777,6 +856,7 @@ const App = {
       this.state.currentSet = null;
       this.state.cookedRecipes = [];
       this.state.shoppingChecked = [];
+      this.state.shoppingPurchased = [];
       this.saveState();
       this.renderMainScreen();
       this.showToast('リセットしました');
@@ -790,6 +870,7 @@ const App = {
       this.state.nextSet = null;
       this.state.cookedRecipes = [];
       this.state.shoppingChecked = [];
+      this.state.shoppingPurchased = [];
       this.saveState();
       this.renderMainScreen();
       this.showToast('次の献立に切り替えました');
@@ -812,57 +893,116 @@ const App = {
   // ========================================
   // セット選択画面
   // ========================================
+  switchSetSelectTab(tab) {
+    this.currentSetSelectTab = tab;
+    this.renderSetSelectScreen();
+  },
+
   renderSetSelectScreen() {
-    const setList = document.getElementById('set-list');
+    const myList = document.getElementById('set-list-my');
+    const publicList = document.getElementById('set-list-public');
+    const myTab = document.getElementById('set-select-my');
+    const publicTab = document.getElementById('set-select-public');
 
-    // サンプルセット + ユーザーセット
-    const allSets = [...this.sampleSets, ...this.state.sets];
-
-    if (allSets.length === 0) {
-      setList.innerHTML = '<p class="empty-hint">まだセットがないよ</p>';
-      return;
+    const activeTab = this.currentSetSelectTab || 'my';
+    document.querySelectorAll('#screen-set-select .tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === `set-${activeTab}`);
+    });
+    if (myTab && publicTab) {
+      myTab.classList.toggle('hidden', activeTab !== 'my');
+      publicTab.classList.toggle('hidden', activeTab !== 'public');
     }
 
-    setList.innerHTML = allSets.map(set => {
-      const recipes = this.getRecipesFromSet(set);
-      const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
-      return `
-        <div class="set-card" onclick="App.selectSet('${set.id}')">
-          <div class="set-card-header">
-            <span class="set-card-name">${set.name}</span>
-            <span class="set-card-count">${recipes.length}品</span>
-          </div>
-          <div class="set-card-preview">
-            <span class="set-card-preview-item">${previewNames}${recipes.length > 3 ? '...' : ''}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
+    // サンプルセット + ユーザーセット
+    const mySets = [...this.sampleSets, ...this.state.sets];
+
+    if (myList) {
+      if (mySets.length === 0) {
+        myList.innerHTML = '<p class="empty-hint">まだセットがないよ</p>';
+      } else {
+        myList.innerHTML = mySets.map(set => {
+          const recipes = this.getRecipesFromSet(set);
+          const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
+          return `
+            <div class="set-card" onclick="App.selectSet('${set.id}')">
+              <div class="set-card-header">
+                <span class="set-card-name">${set.name}</span>
+                <span class="set-card-count">${recipes.length}品</span>
+              </div>
+              <div class="set-card-preview">
+                <span class="set-card-preview-item">${previewNames}${recipes.length > 3 ? '...' : ''}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // 公開セット
+    if (publicList) {
+      if (!this.publicSets || this.publicSets.length === 0) {
+        publicList.innerHTML = '<p class="empty-hint">まだ公開セットがないよ</p>';
+      } else {
+        publicList.innerHTML = this.publicSets.map(set => {
+          const recipes = this.getRecipesFromSet(set);
+          const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
+          const tags = (set.tags || []).join(' ');
+          return `
+            <div class="set-card" onclick="App.selectSet('${set.id}')">
+              <div class="set-card-header">
+                <span class="set-card-name">${set.name}</span>
+                <span class="set-card-count">${recipes.length}品</span>
+              </div>
+              <div class="set-card-meta">
+                <span class="material-icons-round">person</span>
+                <span>${set.author || 'みんなの献立'}</span>
+                ${tags ? `<span class="set-card-tags">${tags}</span>` : ''}
+              </div>
+              <div class="set-card-preview">
+                <span class="set-card-preview-item">${previewNames}${recipes.length > 3 ? '...' : ''}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
   },
 
   selectSet(setId) {
     // サンプルセットから探す
     let set = this.sampleSets.find(s => s.id === setId);
+    let isPublic = false;
     if (!set) {
       // ユーザーセットから探す
       set = this.state.sets.find(s => s.id === setId);
     }
+    if (!set) {
+      set = this.publicSets.find(s => s.id === setId);
+      isPublic = !!set;
+    }
 
     if (set) {
+      const selectedSet = isPublic
+        ? { ...set, id: `temp-${set.id}` }
+        : set;
       // 次の献立を選択中の場合
       if (this.state.selectingFor === 'next') {
-        this.state.nextSet = set;
+        this.state.nextSet = selectedSet;
         this.state.selectingFor = null;
         this.saveState();
         this.showScreen('main');
         this.showToast('次の献立を設定しました');
       } else {
         // 通常の献立選択
-        this.state.currentSet = set;
+        this.state.currentSet = selectedSet;
         this.state.cookedRecipes = [];
         this.state.shoppingChecked = [];
+        this.state.shoppingPurchased = [];
         this.saveState();
         this.showScreen('main');
+
+        // 買い物リストボタンを明示的に更新
+        this.updateShoppingListButton();
 
         // オンボーディング: 初めてセットを選んだ
         if (!this.onboarding.setSelected) {
@@ -870,7 +1010,7 @@ const App = {
           this.saveOnboarding();
           setTimeout(() => this.showGuide('guideShopping'), 500);
         } else {
-          this.showToast('セットを選択しました');
+          this.showToast('献立表に登録しました');
         }
       }
     }
@@ -916,6 +1056,79 @@ const App = {
     const count = this.state.selectedRecipesForSet.length;
 
     btn.disabled = !name || count < 1 || count > 7;
+  },
+
+  // ========================================
+  // セットテンプレート選択（既存のセットから編集）
+  // ========================================
+  showSetTemplateSelector() {
+    const modal = document.getElementById('modal-set-template');
+    const list = document.getElementById('set-template-list');
+
+    // 自分のセット + スターターセット + 公開セットを一覧表示
+    const allSets = [
+      ...this.state.sets.map(s => ({ ...s, source: 'user' })),
+      ...this.sampleSets.map(s => ({ ...s, source: 'starter' })),
+      ...this.publicSets.map(s => ({ ...s, source: 'public' })),
+    ];
+
+    list.innerHTML = allSets.map(set => {
+      const recipeCount = (set.recipeIds || []).length;
+      const sourceLabel = set.source === 'user' ? 'マイセット' :
+                          set.source === 'starter' ? 'スターター' : 'みんなの';
+      return `
+        <div class="set-template-item" onclick="App.selectSetTemplate('${set.id}', '${set.source}')">
+          <div class="set-template-info">
+            <span class="set-template-emoji">${set.emoji || '📦'}</span>
+            <div class="set-template-text">
+              <div class="set-template-name">${set.name}</div>
+              <div class="set-template-meta">${sourceLabel} · ${recipeCount}品</div>
+            </div>
+          </div>
+          <span class="material-icons-round set-template-arrow">chevron_right</span>
+        </div>
+      `;
+    }).join('');
+
+    modal.classList.remove('hidden');
+  },
+
+  closeSetTemplateModal() {
+    document.getElementById('modal-set-template').classList.add('hidden');
+  },
+
+  selectSetTemplate(setId, source) {
+    // 選択されたセットを取得
+    let set;
+    if (source === 'user') {
+      set = this.state.sets.find(s => s.id === setId);
+    } else if (source === 'starter') {
+      set = this.sampleSets.find(s => s.id === setId);
+    } else {
+      set = this.publicSets.find(s => s.id === setId);
+    }
+
+    if (!set) return;
+
+    // セット名を設定（コピーであることを示す）
+    document.getElementById('set-name-input').value = set.name + 'のコピー';
+
+    // レシピを選択状態にする
+    this.state.selectedRecipesForSet = [];
+    (set.recipeIds || []).forEach(recipeId => {
+      const recipe = this.getRecipeById(recipeId);
+      if (recipe) {
+        this.state.selectedRecipesForSet.push(recipe);
+      }
+    });
+
+    // UI更新
+    this.renderSelectedRecipes();
+    this.updateSaveSetButton();
+
+    // モーダルを閉じる
+    this.closeSetTemplateModal();
+    this.showToast('セットの内容を読み込みました');
   },
 
   showRecipeSelector() {
@@ -1083,6 +1296,7 @@ const App = {
     document.getElementById('recipe-name-input').value = '';
     document.getElementById('recipe-url-input').value = '';
     document.getElementById('ingredients-list').innerHTML = '';
+    document.getElementById('steps-list').innerHTML = '';
 
     // 人数選択リセット
     document.querySelectorAll('.serving-btn').forEach(btn => {
@@ -1097,6 +1311,9 @@ const App = {
     // 材料行を2つ追加
     this.addIngredientRow();
     this.addIngredientRow();
+
+    // 作り方の行を1つ追加
+    this.addStepRow();
   },
 
   // ========================================
@@ -1256,9 +1473,17 @@ const App = {
       });
     }
 
-    // 手順は現在フォームにないが、将来用にコンソール出力
+    // 手順
     if (data.steps && data.steps.length > 0) {
-      console.log('認識した手順:', data.steps);
+      const stepsList = document.getElementById('steps-list');
+      stepsList.innerHTML = '';
+
+      data.steps.forEach(step => {
+        this.addStepRow();
+        const rows = stepsList.querySelectorAll('.step-row');
+        const lastRow = rows[rows.length - 1];
+        lastRow.querySelector('.step-input').value = step;
+      });
     }
   },
 
@@ -1275,6 +1500,30 @@ const App = {
       </button>
     `;
     list.appendChild(row);
+  },
+
+  addStepRow() {
+    const list = document.getElementById('steps-list');
+    const stepNum = list.querySelectorAll('.step-row').length + 1;
+    const row = document.createElement('div');
+    row.className = 'step-row';
+    row.innerHTML = `
+      <span class="step-number">${stepNum}</span>
+      <input type="text" class="step-input" placeholder="手順を入力">
+      <button class="btn-remove-ingredient" onclick="App.removeStepRow(this)">
+        <span class="material-icons-round">close</span>
+      </button>
+    `;
+    list.appendChild(row);
+  },
+
+  removeStepRow(btn) {
+    btn.parentElement.remove();
+    // 番号を振り直す
+    const rows = document.querySelectorAll('.step-row');
+    rows.forEach((row, i) => {
+      row.querySelector('.step-number').textContent = i + 1;
+    });
   },
 
   goBackFromRecipeAdd() {
@@ -1311,6 +1560,15 @@ const App = {
       }
     });
 
+    // 作り方
+    const steps = [];
+    document.querySelectorAll('.step-row').forEach(row => {
+      const stepText = row.querySelector('.step-input').value.trim();
+      if (stepText) {
+        steps.push(stepText);
+      }
+    });
+
     // URL
     const url = document.getElementById('recipe-url-input').value.trim();
 
@@ -1324,6 +1582,7 @@ const App = {
       servings,
       tags,
       ingredients,
+      steps,
       url: url || null,
     };
 
@@ -1362,9 +1621,19 @@ const App = {
     const container = document.getElementById('my-tags-filter');
     if (!container) return;
 
-    // ユーザーのレシピから全タグを収集
+    // スターターセットで使われているレシピIDを収集
+    const starterRecipeIds = new Set();
+    this.sampleSets.forEach(set => {
+      (set.recipeIds || []).forEach(id => starterRecipeIds.add(id));
+    });
+    const starterRecipes = this.publicRecipes.filter(r => starterRecipeIds.has(r.id));
+
+    // ユーザーのレシピ + スターターレシピから全タグを収集
     const allTags = new Set();
     this.state.recipes.forEach(recipe => {
+      (recipe.tags || []).forEach(tag => allTags.add(tag));
+    });
+    starterRecipes.forEach(recipe => {
       (recipe.tags || []).forEach(tag => allTags.add(tag));
     });
 
@@ -1394,8 +1663,24 @@ const App = {
     const list = document.getElementById('recipe-list');
     const empty = document.getElementById('recipes-empty');
 
+    // スターターセットで使われているレシピIDを収集
+    const starterRecipeIds = new Set();
+    this.sampleSets.forEach(set => {
+      (set.recipeIds || []).forEach(id => starterRecipeIds.add(id));
+    });
+
+    // スターターレシピ（publicRecipesから取得）
+    const starterRecipes = this.publicRecipes.filter(r => starterRecipeIds.has(r.id));
+
+    // ユーザーレシピとスターターレシピを結合（重複除去）
+    const userRecipeIds = new Set(this.state.recipes.map(r => r.id));
+    const combinedRecipes = [
+      ...this.state.recipes,
+      ...starterRecipes.filter(r => !userRecipeIds.has(r.id))
+    ];
+
     // タグでフィルタリング
-    let recipes = this.state.recipes;
+    let recipes = combinedRecipes;
     if (this.mySelectedTag) {
       recipes = recipes.filter(r => (r.tags || []).includes(this.mySelectedTag));
     }
@@ -1423,22 +1708,27 @@ const App = {
     const list = document.getElementById('my-set-list');
     const empty = document.getElementById('my-sets-empty');
 
-    if (this.state.sets.length === 0) {
+    // スターターセット + ユーザーセット
+    const allSets = [...this.sampleSets, ...this.state.sets];
+
+    if (allSets.length === 0) {
       list.innerHTML = '';
       empty.classList.remove('hidden');
       return;
     }
 
     empty.classList.add('hidden');
-    list.innerHTML = this.state.sets.map(set => {
+    list.innerHTML = allSets.map(set => {
       const recipes = this.getRecipesFromSet(set);
       const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
+      const isStarter = set.id.startsWith('starter-');
       return `
         <div class="set-card" onclick="App.showSetDetail('${set.id}')">
           <div class="set-card-header">
             <span class="set-card-name">${set.name}</span>
             <span class="set-card-count">${recipes.length}品</span>
           </div>
+          ${isStarter ? '<div class="set-card-meta"><span class="starter-badge">スターター</span></div>' : ''}
           <div class="set-card-preview">
             <span class="set-card-preview-item">${previewNames}${recipes.length > 3 ? '...' : ''}</span>
           </div>
@@ -1468,33 +1758,44 @@ const App = {
 
     const body = document.getElementById('detail-set-body');
     body.innerHTML = `
-      <div style="margin-bottom: 24px;">
+      <div style="margin-bottom: 16px;">
         <p style="color: var(--text-sub); font-size: 14px;">${recipes.length}品のレシピ</p>
       </div>
-      <div class="set-detail-recipes">
-        ${recipes.map(recipe => `
-          <div class="set-detail-recipe-item" onclick="App.showRecipeDetailFromSet('${recipe.id}', '${setId}')">
-            <span class="set-detail-recipe-emoji">${recipe.emoji || '🍽️'}</span>
-            <span class="set-detail-recipe-name">${recipe.name}</span>
-            <span class="material-icons-round" style="color: var(--text-hint); margin-left: auto;">chevron_right</span>
-          </div>
-        `).join('')}
+      <div class="set-detail-cards-wrapper">
+        <div class="set-detail-cards-scroll">
+          ${recipes.map((recipe, index) => `
+            <div class="recipe-card set-detail-card" onclick="App.showRecipeDetailFromSet('${recipe.id}', '${setId}')">
+              <div class="card-day-badge">${index + 1}日目</div>
+              <div class="card-emoji">${recipe.emoji || '🍽️'}</div>
+              <div class="card-name">${recipe.name}</div>
+              <div class="card-tags">
+                ${(recipe.tags || []).slice(0, 2).map(tag => `<span class="card-tag">${tag}</span>`).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="scroll-hint"></div>
       </div>
       <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px;">
+        <button class="btn-primary" style="width: 100%;" onclick="App.closeModal(); App.selectSet('${setId}');">
+          <span class="material-icons-round">calendar_today</span>
+          献立表に登録する
+        </button>
         ${isUserSet ? `
-          <button class="btn-primary" style="width: 100%;" onclick="App.editSet('${setId}')">
+          <button class="btn-secondary" style="width: 100%;" onclick="App.editSet('${setId}')">
             <span class="material-icons-round">edit</span>
             編集する
           </button>
           <button class="btn-text" style="color: red;" onclick="App.deleteSet('${setId}')">
             このセットを削除
           </button>
-        ` : `
-          <button class="btn-primary" style="width: 100%;" onclick="App.copySetToMy('${setId}')">
+        ` : ''}
+        ${!isUserSet && !isSampleSet ? `
+          <button class="btn-secondary" style="width: 100%;" onclick="App.copySetToMy('${setId}')">
             <span class="material-icons-round">content_copy</span>
             わたしのセットに追加
           </button>
-        `}
+        ` : ''}
       </div>
     `;
 
@@ -1599,20 +1900,25 @@ const App = {
   },
 
   filterMyItems() {
-    const query = document.getElementById('recipe-search').value.toLowerCase();
+    const query = document.getElementById('recipe-search')?.value.toLowerCase() || '';
+    const category = this.selectedMyCategory || 'all';
 
     if (this.currentMyTab === 'recipes') {
       const items = document.querySelectorAll('#recipe-list .recipe-list-item');
       items.forEach(item => {
         const name = item.querySelector('.recipe-list-name').textContent.toLowerCase();
         const tags = item.querySelector('.recipe-list-meta').textContent.toLowerCase();
-        item.style.display = (name.includes(query) || tags.includes(query)) ? '' : 'none';
+        const matchesQuery = name.includes(query) || tags.includes(query);
+        const matchesCategory = category === 'all' || tags.includes(category.toLowerCase());
+        item.style.display = (matchesQuery && matchesCategory) ? '' : 'none';
       });
     } else {
       const items = document.querySelectorAll('#my-set-list .set-card');
       items.forEach(item => {
         const name = item.querySelector('.set-card-name').textContent.toLowerCase();
-        item.style.display = name.includes(query) ? '' : 'none';
+        const matchesQuery = name.includes(query);
+        // セットにはカテゴリフィルタを適用しない（または別途タグを持たせる）
+        item.style.display = matchesQuery ? '' : 'none';
       });
     }
   },
@@ -1740,19 +2046,9 @@ const App = {
   // ========================================
   // 買い物リスト画面
   // ========================================
-  renderShoppingScreen() {
-    const list = document.getElementById('shopping-list');
-    const empty = document.getElementById('shopping-empty');
-    const actions = document.getElementById('shopping-actions');
+  getAggregatedIngredients() {
+    if (!this.state.currentSet) return [];
 
-    if (!this.state.currentSet) {
-      list.innerHTML = '';
-      empty.classList.remove('hidden');
-      actions.classList.add('hidden');
-      return;
-    }
-
-    // 材料を集計
     const recipes = this.getRecipesFromSet(this.state.currentSet);
     const ingredientMap = new Map();
 
@@ -1763,14 +2059,49 @@ const App = {
         if (ingredientMap.has(key)) {
           ingredientMap.get(key).amount += ing.amount;
         } else {
-          ingredientMap.set(key, { ...ing });
+          ingredientMap.set(key, { ...ing, key });
         }
       });
     });
 
-    const ingredients = Array.from(ingredientMap.values());
+    return Array.from(ingredientMap.values());
+  },
 
-    if (ingredients.length === 0) {
+  renderShoppingScreen() {
+    const list = document.getElementById('shopping-list');
+    const empty = document.getElementById('shopping-empty');
+    const actions = document.getElementById('shopping-actions');
+    const emptyText = empty.querySelector('.empty-text');
+    const emptySubtext = empty.querySelector('.empty-subtext');
+    const setEmptyCopy = (text, subtext) => {
+      if (emptyText) emptyText.textContent = text;
+      if (emptySubtext) emptySubtext.textContent = subtext;
+    };
+
+    if (!this.state.currentSet) {
+      setEmptyCopy('買うものはないよ', 'セットを選ぶと出てくるよ');
+      list.innerHTML = '';
+      empty.classList.remove('hidden');
+      actions.classList.add('hidden');
+      return;
+    }
+
+    const ingredients = this.getAggregatedIngredients();
+    const purchasedSet = new Set(this.state.shoppingPurchased || []);
+    const checkedSet = new Set(this.state.shoppingChecked || []);
+
+    const items = ingredients.map((ing, index) => ({
+      ing,
+      index,
+      checked: checkedSet.has(index),
+    })).filter(item => !purchasedSet.has(item.ing.key));
+
+    if (items.length === 0) {
+      if (ingredients.length > 0) {
+        setEmptyCopy('買い物は完了', '買ったものは冷蔵庫へ移動したよ');
+      } else {
+        setEmptyCopy('買うものはないよ', '材料がまだないよ');
+      }
       list.innerHTML = '';
       empty.classList.remove('hidden');
       actions.classList.add('hidden');
@@ -1780,26 +2111,31 @@ const App = {
     empty.classList.add('hidden');
     actions.classList.remove('hidden');
 
-    list.innerHTML = ingredients.map((ing, index) => {
-      const isChecked = this.state.shoppingChecked.includes(index);
-      return `
-        <div class="shopping-item ${isChecked ? 'checked' : ''}" onclick="App.toggleShoppingItem(${index})">
-          <div class="shopping-checkbox">
-            <span class="material-icons-round">check</span>
-          </div>
-          <div class="shopping-info">
-            <div class="shopping-name">${ing.name}</div>
-            <div class="shopping-amount">${ing.amount}${ing.unit}</div>
+    const sortedItems = items.sort((a, b) => {
+      if (a.checked === b.checked) {
+        return a.index - b.index;
+      }
+      return a.checked ? 1 : -1;
+    });
+
+    list.innerHTML = sortedItems.map(item => `
+      <div class="shopping-item ${item.checked ? 'checked' : ''}" onclick="App.toggleShoppingItem(${item.index})">
+        <div class="shopping-checkbox">
+          <span class="material-icons-round">check</span>
+        </div>
+        <div class="shopping-info">
+          <div class="shopping-line">
+            <span class="shopping-name">${item.ing.name}</span>
+            <span class="shopping-amount">${item.ing.amount}${item.ing.unit}</span>
           </div>
         </div>
-      `;
-    }).join('');
+      </div>
+    `).join('');
 
-    // チェック済みボタンの表示制御
-    const btnPurchaseChecked = document.getElementById('btn-purchase-checked');
-    if (btnPurchaseChecked) {
-      const hasChecked = this.state.shoppingChecked && this.state.shoppingChecked.length > 0;
-      btnPurchaseChecked.style.display = hasChecked ? 'flex' : 'none';
+    const btnPurchase = document.getElementById('btn-purchase');
+    if (btnPurchase) {
+      const hasChecked = sortedItems.some(item => item.checked);
+      btnPurchase.disabled = !hasChecked;
     }
   },
 
@@ -1859,8 +2195,8 @@ const App = {
             <span class="public-set-count">${recipes.length}品</span>
             <div class="public-set-actions-inline">
               <button class="btn-use-set" onclick="event.stopPropagation(); App.usePublicSetAsKondate('${set.id}')">
-                <span class="material-icons-round">style</span>
-                使う
+                <span class="material-icons-round">add</span>
+                登録
               </button>
               <button class="btn-save-set" onclick="event.stopPropagation(); App.savePublicSet('${set.id}')">
                 <span class="material-icons-round">bookmark_border</span>
@@ -1892,21 +2228,25 @@ const App = {
   },
 
   filterPublicItems() {
-    const query = document.getElementById('public-search').value.toLowerCase();
+    const query = document.getElementById('public-search')?.value.toLowerCase() || '';
+    const category = this.selectedPublicCategory || 'all';
 
     if (this.currentPublicTab === 'recipes') {
       const items = document.querySelectorAll('#public-recipe-list .recipe-list-item');
       items.forEach(item => {
         const name = item.querySelector('.recipe-list-name').textContent.toLowerCase();
         const tags = item.querySelector('.recipe-list-meta').textContent.toLowerCase();
-        item.style.display = (name.includes(query) || tags.includes(query)) ? '' : 'none';
+        const matchesQuery = name.includes(query) || tags.includes(query);
+        const matchesCategory = category === 'all' || tags.includes(category.toLowerCase());
+        item.style.display = (matchesQuery && matchesCategory) ? '' : 'none';
       });
     } else {
       const items = document.querySelectorAll('#public-set-list .public-set-card');
       items.forEach(item => {
-        const name = item.querySelector('.public-set-name').textContent.toLowerCase();
-        const author = item.querySelector('.public-set-author').textContent.toLowerCase();
-        item.style.display = (name.includes(query) || author.includes(query)) ? '' : 'none';
+        const name = item.querySelector('.public-set-name')?.textContent.toLowerCase() || '';
+        const author = item.querySelector('.public-set-author')?.textContent.toLowerCase() || '';
+        const matchesQuery = name.includes(query) || author.includes(query);
+        item.style.display = matchesQuery ? '' : 'none';
       });
     }
   },
@@ -1962,10 +2302,10 @@ const App = {
 
     const recipes = this.getRecipesFromSet(set);
 
-    const modal = document.getElementById('modal-recipe-detail');
-    document.getElementById('detail-recipe-name').textContent = set.name;
+    const modal = document.getElementById('modal-set-detail');
+    document.getElementById('detail-set-name').textContent = set.name;
 
-    const body = document.getElementById('detail-recipe-body');
+    const body = document.getElementById('detail-set-body');
     body.innerHTML = `
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: var(--text-sub);">
         <span class="material-icons-round" style="font-size: 18px;">person</span>
@@ -1974,19 +2314,26 @@ const App = {
       <div style="margin-bottom: 16px; color: var(--text-hint);">
         ${(set.tags || []).join(' ')}
       </div>
-      <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">含まれるレシピ（${recipes.length}品）</h3>
-      <ul style="list-style: none;">
-        ${recipes.map(recipe => `
-          <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 24px;">${recipe.emoji || '🍽️'}</span>
-            <span>${recipe.name}</span>
-          </li>
-        `).join('')}
-      </ul>
+      <p style="color: var(--text-sub); font-size: 14px; margin-bottom: 8px;">${recipes.length}品のレシピ</p>
+      <div class="set-detail-cards-wrapper">
+        <div class="set-detail-cards-scroll">
+          ${recipes.map((recipe, index) => `
+            <div class="recipe-card set-detail-card" onclick="App.showRecipeDetailFromSet('${recipe.id}', '${setId}')">
+              <div class="card-day-badge">${index + 1}日目</div>
+              <div class="card-emoji">${recipe.emoji || '🍽️'}</div>
+              <div class="card-name">${recipe.name}</div>
+              <div class="card-tags">
+                ${(recipe.tags || []).slice(0, 2).map(tag => `<span class="card-tag">${tag}</span>`).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="scroll-hint"></div>
+      </div>
       <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px;">
         <button class="btn-primary" style="width: 100%;" onclick="App.usePublicSetAsKondate('${set.id}')">
-          <span class="material-icons-round">style</span>
-          この献立を使う
+          <span class="material-icons-round">calendar_today</span>
+          献立表に登録する
         </button>
         <button class="btn-secondary" style="width: 100%;" onclick="App.savePublicSet('${set.id}'); App.closeModal();">
           <span class="material-icons-round">bookmark_border</span>
@@ -2010,6 +2357,7 @@ const App = {
     };
     this.state.cookedRecipes = [];
     this.state.shoppingChecked = [];
+    this.state.shoppingPurchased = [];
     this.saveState();
     this.closeModal();
     this.showScreen('main');
@@ -2043,20 +2391,22 @@ const App = {
     if (fridge.length === 0) {
       body.innerHTML = `
         <div class="fridge-empty">
-          <div style="font-size: 48px; margin-bottom: 16px;">🧊</div>
-          <p>冷蔵庫は空です</p>
-          <p style="font-size: 12px; color: var(--text-hint); margin-top: 8px;">
-            買い物リストで「購入した」を押すと<br>ここに食材が入ります
+          <div class="fridge-empty-icon">🧊</div>
+          <p class="fridge-empty-text">冷蔵庫は空です</p>
+          <p class="fridge-empty-hint">
+            下のボタンから食材を追加するか、<br>買い物リストから追加できます
           </p>
         </div>
       `;
     } else {
+      // 食材をグリッドカード形式で表示
       body.innerHTML = `
-        <div class="fridge-list">
-          ${fridge.map(item => `
-            <div class="fridge-item">
-              <span class="fridge-item-name">${item.name}</span>
-              <span class="fridge-item-amount">${item.amount}${item.unit}</span>
+        <div class="fridge-grid">
+          ${fridge.map((item, index) => `
+            <div class="fridge-card" onclick="App.confirmDeleteFridgeItem(${index})">
+              <div class="fridge-card-icon">${this.getIngredientEmoji(item.name)}</div>
+              <div class="fridge-card-name">${item.name}</div>
+              <div class="fridge-card-amount">${item.amount}${item.unit}</div>
             </div>
           `).join('')}
         </div>
@@ -2066,44 +2416,234 @@ const App = {
     modal.classList.remove('hidden');
   },
 
-  purchaseAll() {
-    // 買い物リストの材料を冷蔵庫に追加
-    const recipes = this.getRecipesFromSet(this.state.currentSet);
-    const ingredientMap = new Map();
+  // 食材に応じた絵文字を返す
+  getIngredientEmoji(name) {
+    const emojiMap = {
+      '豚': '🐷', '鶏': '🐔', '牛': '🐄', '肉': '🥩',
+      '玉ねぎ': '🧅', '人参': '🥕', 'にんじん': '🥕', 'じゃがいも': '🥔',
+      'キャベツ': '🥬', 'レタス': '🥬', '白菜': '🥬', 'もやし': '🌱',
+      '卵': '🥚', '豆腐': '🧈', '魚': '🐟', '鮭': '🐟',
+      'トマト': '🍅', 'ねぎ': '🧅', '長ねぎ': '🧅', 'にんにく': '🧄',
+      '生姜': '🫚', 'パン': '🍞', 'バター': '🧈', 'レモン': '🍋',
+    };
+    for (const [key, emoji] of Object.entries(emojiMap)) {
+      if (name.includes(key)) return emoji;
+    }
+    return '🥗'; // デフォルト
+  },
 
-    recipes.forEach(recipe => {
-      if (!recipe.ingredients) return;
-      recipe.ingredients.forEach(ing => {
-        const key = `${ing.name}-${ing.unit}`;
-        if (ingredientMap.has(key)) {
-          ingredientMap.get(key).amount += ing.amount;
-        } else {
-          ingredientMap.set(key, { ...ing });
-        }
-      });
+  // 冷蔵庫の食材削除確認
+  confirmDeleteFridgeItem(index) {
+    const item = this.state.fridge[index];
+    if (!item) return;
+
+    this.pendingDeleteFridgeIndex = index;
+
+    const modal = document.getElementById('modal-confirm-delete-fridge');
+    document.getElementById('confirm-delete-fridge-name').textContent = item.name;
+    modal.classList.remove('hidden');
+  },
+
+  // 冷蔵庫の食材を削除
+  deleteFridgeItem() {
+    const index = this.pendingDeleteFridgeIndex;
+    if (index === undefined || index === null) return;
+
+    const item = this.state.fridge[index];
+    if (!item) return;
+
+    // 削除履歴に追加（1週間分保持）
+    if (!this.state.deletedFridgeItems) {
+      this.state.deletedFridgeItems = [];
+    }
+    this.state.deletedFridgeItems.push({
+      ...item,
+      deletedAt: Date.now()
     });
+    // 1週間より古いものを削除
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    this.state.deletedFridgeItems = this.state.deletedFridgeItems.filter(
+      i => i.deletedAt > oneWeekAgo
+    );
 
-    // 冷蔵庫に追加（同じ食材があれば加算）
+    // 食材を削除
+    this.state.fridge.splice(index, 1);
+    this.saveState();
+    this.updateBadges();
+
+    // モーダルを閉じて冷蔵庫を再表示
+    document.getElementById('modal-confirm-delete-fridge').classList.add('hidden');
+    this.pendingDeleteFridgeIndex = null;
+    this.showFridge();
+    this.showToast(`${item.name}を削除しました`);
+  },
+
+  // 削除キャンセル
+  cancelDeleteFridgeItem() {
+    document.getElementById('modal-confirm-delete-fridge').classList.add('hidden');
+    this.pendingDeleteFridgeIndex = null;
+  },
+
+  // 削除履歴を表示
+  showDeletedFridgeItems() {
+    document.getElementById('modal-fridge').classList.add('hidden');
+    const modal = document.getElementById('modal-deleted-fridge');
+    const body = document.getElementById('deleted-fridge-body');
+
+    const items = this.state.deletedFridgeItems || [];
+
+    if (items.length === 0) {
+      body.innerHTML = `
+        <div class="fridge-empty">
+          <p class="fridge-empty-text">履歴はありません</p>
+          <p class="fridge-empty-hint">削除した食材は1週間保持されます</p>
+        </div>
+      `;
+    } else {
+      // 新しい順に並べる
+      const sortedItems = [...items].sort((a, b) => b.deletedAt - a.deletedAt);
+      body.innerHTML = `
+        <div class="deleted-fridge-list">
+          ${sortedItems.map((item, index) => {
+            const date = new Date(item.deletedAt);
+            const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+            return `
+              <div class="deleted-fridge-item">
+                <div class="deleted-fridge-info">
+                  <span class="deleted-fridge-name">${item.name}</span>
+                  <span class="deleted-fridge-amount">${item.amount}${item.unit}</span>
+                  <span class="deleted-fridge-date">${dateStr}</span>
+                </div>
+                <button class="btn-restore" onclick="App.restoreFridgeItem(${items.indexOf(item)})">
+                  <span class="material-icons-round">restore</span>
+                </button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    modal.classList.remove('hidden');
+  },
+
+  // 削除履歴を閉じて冷蔵庫に戻る
+  closeDeletedFridgeItems() {
+    document.getElementById('modal-deleted-fridge').classList.add('hidden');
+    document.getElementById('modal-fridge').classList.remove('hidden');
+  },
+
+  // 削除した食材を復元
+  restoreFridgeItem(index) {
+    const items = this.state.deletedFridgeItems || [];
+    const item = items[index];
+    if (!item) return;
+
+    // 冷蔵庫に追加（同じ名前と単位があれば合算）
+    if (!this.state.fridge) {
+      this.state.fridge = [];
+    }
+    const existing = this.state.fridge.find(
+      f => f.name === item.name && f.unit === item.unit
+    );
+    if (existing) {
+      existing.amount += item.amount;
+    } else {
+      this.state.fridge.push({
+        name: item.name,
+        amount: item.amount,
+        unit: item.unit
+      });
+    }
+
+    // 履歴から削除
+    this.state.deletedFridgeItems.splice(index, 1);
+    this.saveState();
+    this.updateBadges();
+
+    this.showToast(`${item.name}を復元しました`);
+    this.showDeletedFridgeItems(); // 履歴を再表示
+  },
+
+  // 食材追加モーダルを表示
+  showAddFridgeItem() {
+    document.getElementById('modal-fridge').classList.add('hidden');
+    document.getElementById('modal-add-fridge').classList.remove('hidden');
+    // フォームをリセット
+    document.getElementById('fridge-item-name').value = '';
+    document.getElementById('fridge-item-amount').value = '1';
+    document.getElementById('fridge-item-unit').value = '個';
+    // フォーカス
+    setTimeout(() => {
+      document.getElementById('fridge-item-name').focus();
+    }, 100);
+  },
+
+  // 食材追加をキャンセル
+  cancelAddFridgeItem() {
+    document.getElementById('modal-add-fridge').classList.add('hidden');
+    document.getElementById('modal-fridge').classList.remove('hidden');
+  },
+
+  // 食材を冷蔵庫に追加
+  addFridgeItem() {
+    const name = document.getElementById('fridge-item-name').value.trim();
+    const amount = parseFloat(document.getElementById('fridge-item-amount').value) || 1;
+    const unit = document.getElementById('fridge-item-unit').value;
+
+    if (!name) {
+      this.showToast('食材名を入力してください');
+      return;
+    }
+
     if (!this.state.fridge) {
       this.state.fridge = [];
     }
 
-    ingredientMap.forEach(newItem => {
+    // 同じ名前・単位の食材があれば量を追加
+    const existing = this.state.fridge.find(f => f.name === name && f.unit === unit);
+    if (existing) {
+      existing.amount += amount;
+    } else {
+      this.state.fridge.push({ name, amount, unit });
+    }
+
+    this.saveState();
+    this.updateBadges();
+
+    // モーダルを切り替え
+    document.getElementById('modal-add-fridge').classList.add('hidden');
+    this.showFridge();
+    this.showToast(`${name}を追加しました`);
+  },
+
+  purchaseAll() {
+    const ingredients = this.getAggregatedIngredients();
+    if (ingredients.length === 0) {
+      this.showToast('買うものがありません');
+      return;
+    }
+
+    if (!this.state.fridge) {
+      this.state.fridge = [];
+    }
+
+    ingredients.forEach(ing => {
       const existing = this.state.fridge.find(
-        f => f.name === newItem.name && f.unit === newItem.unit
+        f => f.name === ing.name && f.unit === ing.unit
       );
       if (existing) {
-        existing.amount += newItem.amount;
+        existing.amount += ing.amount;
       } else {
-        this.state.fridge.push({ ...newItem });
+        this.state.fridge.push({ ...ing });
       }
     });
 
-    // 買い物リストのチェックをリセット
     this.state.shoppingChecked = [];
+    this.state.shoppingPurchased = ingredients.map(ing => ing.key);
 
     this.saveState();
-    this.showScreen('main');
+    this.renderShoppingScreen();
 
     // オンボーディング: 初めて購入した
     if (!this.onboarding.fridgeNotified) {
@@ -2123,25 +2663,9 @@ const App = {
       return;
     }
 
-    // 材料を集計
-    const recipes = this.getRecipesFromSet(this.state.currentSet);
-    const ingredientMap = new Map();
+    const ingredients = this.getAggregatedIngredients();
+    const purchasedSet = new Set(this.state.shoppingPurchased || []);
 
-    recipes.forEach(recipe => {
-      if (!recipe.ingredients) return;
-      recipe.ingredients.forEach(ing => {
-        const key = `${ing.name}-${ing.unit}`;
-        if (ingredientMap.has(key)) {
-          ingredientMap.get(key).amount += ing.amount;
-        } else {
-          ingredientMap.set(key, { ...ing });
-        }
-      });
-    });
-
-    const ingredients = Array.from(ingredientMap.values());
-
-    // 冷蔵庫に追加（チェック済みの材料のみ）
     if (!this.state.fridge) {
       this.state.fridge = [];
     }
@@ -2158,10 +2682,12 @@ const App = {
       } else {
         this.state.fridge.push({ ...ing });
       }
+
+      purchasedSet.add(ing.key);
     });
 
-    // チェック済みをリセット
     this.state.shoppingChecked = [];
+    this.state.shoppingPurchased = Array.from(purchasedSet);
 
     this.saveState();
     this.renderShoppingScreen();
@@ -2173,7 +2699,7 @@ const App = {
       this.saveOnboarding();
       setTimeout(() => this.showGuide('fridgeStocked'), 300);
     } else {
-      this.showToast('チェック済みを冷蔵庫に追加しました');
+      this.showToast('買ったものを冷蔵庫に追加しました');
     }
   },
 
@@ -2206,6 +2732,229 @@ const App = {
     setTimeout(() => {
       toast.classList.add('hidden');
     }, 2000);
+  },
+
+  // ========================================
+  // 買い物リストポップアップ（REQ-004）
+  // ========================================
+  shoppingPopupChecked: [], // ポップアップ内のチェック状態（一時的）
+
+  showShoppingPopup() {
+    this.shoppingPopupChecked = []; // チェック状態をリセット
+    this.renderShoppingPopup();
+    document.getElementById('modal-shopping').classList.remove('hidden');
+  },
+
+  renderShoppingPopup() {
+    const body = document.getElementById('shopping-popup-body');
+    const ingredients = this.getAggregatedIngredients();
+    const purchasedSet = new Set(this.state.shoppingPurchased || []);
+
+    // 未購入のもののみ表示
+    const unpurchased = ingredients.filter(ing => !purchasedSet.has(ing.key));
+
+    if (unpurchased.length === 0) {
+      body.innerHTML = '<div class="shopping-popup-empty">買うものはありません</div>';
+      document.getElementById('btn-reflect-fridge').disabled = true;
+      return;
+    }
+
+    // チェック済みを下に、未チェックを上に並べる
+    const uncheckedItems = unpurchased
+      .map((ing, index) => ({ ing, index }))
+      .filter(item => !this.shoppingPopupChecked.includes(item.index));
+    const checkedItems = unpurchased
+      .map((ing, index) => ({ ing, index }))
+      .filter(item => this.shoppingPopupChecked.includes(item.index));
+    const sortedItems = [...uncheckedItems, ...checkedItems];
+
+    body.innerHTML = `
+      <div class="shopping-popup-list">
+        ${sortedItems.map(({ ing, index }) => `
+          <div class="shopping-popup-item ${this.shoppingPopupChecked.includes(index) ? 'checked' : ''}" data-index="${index}">
+            <div class="checkbox-wrapper" onclick="App.toggleShoppingPopupItem(${index})">
+              <span class="material-icons-round checkbox-icon">
+                ${this.shoppingPopupChecked.includes(index) ? 'check_box' : 'check_box_outline_blank'}
+              </span>
+            </div>
+            <span class="shopping-item-name">${ing.name}</span>
+            <span class="shopping-popup-amount">${ing.amount}${ing.unit}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    document.getElementById('btn-reflect-fridge').disabled = this.shoppingPopupChecked.length === 0;
+  },
+
+  toggleShoppingPopupItem(index) {
+    const idx = this.shoppingPopupChecked.indexOf(index);
+    const isChecking = idx < 0; // チェックを入れる場合
+
+    // まずチェック状態を更新
+    if (idx >= 0) {
+      this.shoppingPopupChecked.splice(idx, 1);
+    } else {
+      this.shoppingPopupChecked.push(index);
+    }
+
+    // チェックボックスのアイコンを即座に更新（視覚的フィードバック）
+    const item = document.querySelector(`.shopping-popup-item[data-index="${index}"]`);
+    if (item) {
+      const icon = item.querySelector('.checkbox-icon');
+      if (icon) {
+        icon.textContent = isChecking ? 'check_box' : 'check_box_outline_blank';
+      }
+      item.classList.toggle('checked', isChecking);
+    }
+
+    // チェックを入れた場合は少し待ってから並び替え（チェックしたのを確認できるように）
+    if (isChecking) {
+      setTimeout(() => {
+        this.renderShoppingPopup();
+      }, 400);
+    } else {
+      // チェックを外した場合は即座に並び替え
+      this.renderShoppingPopup();
+    }
+  },
+
+  showReflectOptions() {
+    if (this.shoppingPopupChecked.length === 0) {
+      this.showToast('チェックされた項目がありません');
+      return;
+    }
+    document.getElementById('modal-shopping').classList.add('hidden');
+    document.getElementById('modal-reflect-options').classList.remove('hidden');
+  },
+
+  reflectCheckedToFridge() {
+    const ingredients = this.getAggregatedIngredients();
+    const purchasedSet = new Set(this.state.shoppingPurchased || []);
+    const unpurchased = ingredients.filter(ing => !purchasedSet.has(ing.key));
+
+    if (!this.state.fridge) {
+      this.state.fridge = [];
+    }
+
+    this.shoppingPopupChecked.forEach(index => {
+      const ing = unpurchased[index];
+      if (!ing) return;
+
+      const existing = this.state.fridge.find(
+        f => f.name === ing.name && f.unit === ing.unit
+      );
+      if (existing) {
+        existing.amount += ing.amount;
+      } else {
+        this.state.fridge.push({ ...ing });
+      }
+
+      purchasedSet.add(ing.key);
+    });
+
+    this.state.shoppingPurchased = Array.from(purchasedSet);
+    this.shoppingPopupChecked = [];
+
+    this.saveState();
+    this.closeModal();
+    this.updateShoppingListButton();
+    this.updateBadges();
+
+    // オンボーディング
+    if (!this.onboarding.fridgeNotified) {
+      this.onboarding.purchasePrompted = true;
+      this.onboarding.fridgeNotified = true;
+      this.saveOnboarding();
+      setTimeout(() => this.showGuide('fridgeStocked'), 300);
+    } else {
+      this.showToast('冷蔵庫に追加しました！');
+    }
+  },
+
+  showReceiptUpload() {
+    this.closeModal();
+    this.showToast('レシート読み取りは準備中です');
+  },
+
+  updateShoppingListButton() {
+    const button = document.getElementById('shopping-list-button');
+    const countEl = document.getElementById('shopping-count-main');
+    if (!button) return;
+
+    const ingredients = this.getAggregatedIngredients();
+    const purchasedSet = new Set(this.state.shoppingPurchased || []);
+    const unpurchased = ingredients.filter(ing => !purchasedSet.has(ing.key));
+
+    if (unpurchased.length > 0) {
+      button.classList.remove('hidden');
+      if (countEl) {
+        countEl.textContent = unpurchased.length;
+      }
+    } else {
+      button.classList.add('hidden');
+    }
+  },
+
+  // ========================================
+  // カテゴリ選択（左サイドバー）
+  // ========================================
+  selectedMyCategory: 'all',
+  selectedPublicCategory: 'all',
+
+  selectMyCategory(category) {
+    this.selectedMyCategory = category;
+
+    // UIを更新
+    document.querySelectorAll('#my-category-sidebar .category-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.category === category);
+    });
+
+    // フィルター適用
+    this.filterMyItems();
+  },
+
+  selectPublicCategory(category) {
+    this.selectedPublicCategory = category;
+
+    // UIを更新
+    document.querySelectorAll('#public-category-sidebar .category-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.category === category);
+    });
+
+    // フィルター適用
+    this.filterPublicItems();
+  },
+
+  // ========================================
+  // FAB（Floating Action Button）
+  // ========================================
+  fabMenuOpen: false,
+
+  showFabMenu() {
+    this.fabMenuOpen = !this.fabMenuOpen;
+    const menu = document.getElementById('fab-menu');
+    const fab = document.getElementById('fab-my');
+
+    if (this.fabMenuOpen) {
+      menu.classList.remove('hidden');
+      fab.style.transform = 'rotate(45deg)';
+    } else {
+      menu.classList.add('hidden');
+      fab.style.transform = '';
+    }
+  },
+
+  closeFabMenu() {
+    this.fabMenuOpen = false;
+    const menu = document.getElementById('fab-menu');
+    const fab = document.getElementById('fab-my');
+    if (menu) menu.classList.add('hidden');
+    if (fab) fab.style.transform = '';
+  },
+
+  showSetSearch() {
+    this.showToast('セット検索は準備中です');
   },
 
   // ========================================
@@ -2302,17 +3051,10 @@ const App = {
   getShoppingListCount() {
     if (!this.state.currentSet) return 0;
 
-    const recipes = this.getRecipesFromSet(this.state.currentSet);
-    const ingredientSet = new Set();
+    const ingredients = this.getAggregatedIngredients();
+    const purchasedSet = new Set(this.state.shoppingPurchased || []);
 
-    recipes.forEach(recipe => {
-      if (!recipe.ingredients) return;
-      recipe.ingredients.forEach(ing => {
-        ingredientSet.add(`${ing.name}-${ing.unit}`);
-      });
-    });
-
-    return ingredientSet.size;
+    return ingredients.filter(ing => !purchasedSet.has(ing.key)).length;
   },
 };
 
