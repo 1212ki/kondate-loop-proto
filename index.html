@@ -44,11 +44,17 @@
     <div id="screen-main" class="screen">
       <header class="header header-main">
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-main"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-main"></span>
@@ -57,7 +63,7 @@
       </header>
 
       <main class="main-content with-nav">
-        <h2 class="screen-title">こんだて表</h2>
+        <h2 class="screen-title">献立表</h2>
         <!-- 買い物リストボタン（空でない時のみ表示） -->
         <div id="shopping-list-button" class="shopping-list-button hidden">
           <button class="btn-shopping-list" onclick="App.showShoppingPopup()">
@@ -131,11 +137,17 @@
           <span class="material-icons-round">arrow_back</span>
         </button>
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-set-select"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-set-select"></span>
@@ -182,11 +194,17 @@
           <span class="material-icons-round">arrow_back</span>
         </button>
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-set-create"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-set-create"></span>
@@ -211,6 +229,15 @@
           <div class="form-group">
             <label class="form-label">セットの名前</label>
             <input type="text" id="set-name-input" class="form-input" placeholder="例: 定番おうちごはん">
+          </div>
+          <div class="form-group">
+            <label class="form-label">作成者（任意）</label>
+            <input type="text" id="set-author-input" class="form-input" list="creator-name-options" placeholder="例: あなた / 田中シェフ / @someone">
+            <p class="form-hint">外部共有時の出典に使います。自分・料理家・フリーワードから選べます。</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">セットの概要（任意）</label>
+            <textarea id="set-description-input" class="import-textarea" placeholder="例: 平日向けの時短5日セット"></textarea>
           </div>
 
           <div class="form-group">
@@ -240,11 +267,17 @@
           <span class="material-icons-round">arrow_back</span>
         </button>
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-recipe-add"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-recipe-add"></span>
@@ -270,6 +303,11 @@
           <div class="form-group">
             <label class="form-label">料理名</label>
             <input type="text" id="recipe-name-input" class="form-input" placeholder="例: 豚の生姜焼き">
+          </div>
+          <div class="form-group">
+            <label class="form-label">作成者（任意）</label>
+            <input type="text" id="recipe-author-input" class="form-input" list="creator-name-options" placeholder="例: あなた / 田中シェフ / @someone">
+            <p class="form-hint">外部共有時の出典に使います。自分・料理家・フリーワードから選べます。</p>
           </div>
 
           <div class="form-group">
@@ -344,11 +382,17 @@
     <div id="screen-recipes" class="screen">
       <header class="header header-main">
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-recipes"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-recipes"></span>
@@ -472,11 +516,17 @@
           <span class="material-icons-round">arrow_back</span>
         </button>
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-shopping"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-shopping"></span>
@@ -497,7 +547,7 @@
         </div>
 
         <div class="shopping-add-card">
-          <div class="shopping-add-title">食材を追加</div>
+          <div class="shopping-add-title">他の食材を追加</div>
           <div class="shopping-add-row">
             <input type="text" id="shopping-extra-name" class="shopping-add-input" placeholder="追加する食材">
             <input type="number" id="shopping-extra-amount" class="shopping-add-amount" value="1" min="0.1" step="0.1">
@@ -519,11 +569,17 @@
     <div id="screen-public" class="screen">
       <header class="header header-main">
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-public"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-public"></span>
@@ -616,15 +672,238 @@
       </nav>
     </div>
 
+    <!-- 6.1 通知 -->
+    <div id="screen-notifications" class="screen">
+      <header class="header header-sub">
+        <button class="header-back" onclick="App.goBack()">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <div class="header-logo">
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
+          <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
+        </div>
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-notifications"></span>
+          </button>
+          <button class="header-action has-badge" onclick="App.showFridge()">
+            <span class="material-icons-round">kitchen</span>
+            <span class="action-badge" id="badge-fridge-notifications"></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="main-content with-header">
+        <h2 class="screen-title">通知</h2>
+
+        <div class="tab-switcher">
+          <button class="tab-btn active" data-tab="notification-news" onclick="App.switchNotificationTab('news')">ニュース</button>
+          <button class="tab-btn" data-tab="notification-personal" onclick="App.switchNotificationTab('personal')">あなた宛て</button>
+        </div>
+
+        <div class="notification-actions">
+          <button class="btn-mini btn-mini-ghost" id="notification-mark-all" onclick="App.markAllNotificationsRead(); App.renderNotificationsScreen();">
+            すべて既読
+          </button>
+        </div>
+
+        <div id="notification-empty" class="empty-state hidden">
+          <div class="empty-illustration">🔔</div>
+          <p class="empty-text">まだ通知はありません</p>
+          <p class="empty-subtext">新しいお知らせが届いたら表示されます</p>
+        </div>
+
+        <div id="notification-list" class="notification-list">
+          <!-- 通知一覧 -->
+        </div>
+      </main>
+    </div>
+
+    <!-- 6.2 料理家詳細 -->
+    <div id="screen-chef-detail" class="screen">
+      <header class="header header-sub">
+        <button class="header-back" onclick="App.goBack('public')">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <div class="header-logo">
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
+          <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
+        </div>
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-chef-detail"></span>
+          </button>
+          <button class="header-action has-badge" onclick="App.showFridge()">
+            <span class="material-icons-round">kitchen</span>
+            <span class="action-badge" id="badge-fridge-chef-detail"></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="main-content with-header">
+        <div class="chef-profile-card">
+          <div class="chef-avatar" id="chef-avatar">👩‍🍳</div>
+          <div class="chef-profile-info">
+            <div class="chef-name" id="chef-name">料理家</div>
+            <div class="chef-bio" id="chef-bio"></div>
+            <div class="chef-links" id="chef-links"></div>
+          </div>
+          <div class="chef-actions" id="chef-actions"></div>
+        </div>
+
+        <div class="tab-switcher">
+          <button class="tab-btn active" data-tab="chef-home" onclick="App.switchChefTab('home')">ホーム</button>
+          <button class="tab-btn" data-tab="chef-recipes" onclick="App.switchChefTab('recipes')">レシピ</button>
+          <button class="tab-btn" data-tab="chef-sets" onclick="App.switchChefTab('sets')">セット</button>
+          <button class="tab-btn" data-tab="chef-membership" onclick="App.switchChefTab('membership')">メンバーシップ</button>
+        </div>
+
+        <div id="chef-filter-row" class="search-row hidden">
+          <div class="search-box">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="chef-search" class="search-input" placeholder="料理名で探す" oninput="App.filterChefItems()">
+          </div>
+          <div class="search-actions">
+            <button class="icon-button" id="chef-sort-btn" onclick="App.toggleChefSort()" aria-label="並び替え">
+              <span class="material-icons-round">sort</span>
+            </button>
+          </div>
+        </div>
+        <div class="filter-summary hidden" id="chef-filter-summary"></div>
+        <div class="filter-chips hidden" id="chef-filter-chips">
+          <button class="filter-chip active" data-filter="all" onclick="App.switchChefFilter('all')">すべて</button>
+          <button class="filter-chip" data-filter="membership" onclick="App.switchChefFilter('membership')">メンバー限定</button>
+        </div>
+
+        <div id="chef-tab-home" class="tab-content"></div>
+        <div id="chef-tab-recipes" class="tab-content hidden"></div>
+        <div id="chef-tab-sets" class="tab-content hidden"></div>
+        <div id="chef-tab-membership" class="tab-content hidden"></div>
+      </main>
+    </div>
+
+    <!-- 6.3 メンバーシッププラン -->
+    <div id="screen-membership-plans" class="screen">
+      <header class="header header-sub">
+        <button class="header-back" onclick="App.goBack('public')">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <div class="header-logo">
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
+          <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
+        </div>
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-membership-plans"></span>
+          </button>
+          <button class="header-action has-badge" onclick="App.showFridge()">
+            <span class="material-icons-round">kitchen</span>
+            <span class="action-badge" id="badge-fridge-membership-plans"></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="main-content with-header">
+        <h2 class="screen-title">メンバーシップ</h2>
+        <div class="membership-plans-hero">
+          <div class="membership-chef-name" id="membership-plans-chef">料理家</div>
+          <div class="membership-chef-note" id="membership-plans-note"></div>
+        </div>
+        <div id="membership-plans-list">
+          <!-- プラン一覧 -->
+        </div>
+      </main>
+    </div>
+
+    <!-- 6.4 メンバーシップ加入後 -->
+    <div id="screen-membership-detail" class="screen">
+      <header class="header header-sub">
+        <button class="header-back" onclick="App.goBack('mypage')">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <div class="header-logo">
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
+          <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
+        </div>
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-membership-detail"></span>
+          </button>
+          <button class="header-action has-badge" onclick="App.showFridge()">
+            <span class="material-icons-round">kitchen</span>
+            <span class="action-badge" id="badge-fridge-membership-detail"></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="main-content with-header">
+        <h2 class="screen-title">メンバーシップ</h2>
+        <div class="membership-detail-card">
+          <div class="membership-detail-header">
+            <div class="membership-detail-chef" id="membership-detail-chef">料理家</div>
+            <div class="membership-detail-status" id="membership-detail-status">未加入</div>
+          </div>
+          <div class="membership-detail-meta">
+            <div>
+              <span class="meta-label">プラン</span>
+              <span class="meta-value" id="membership-detail-plan">-</span>
+            </div>
+            <div>
+              <span class="meta-label">料金</span>
+              <span class="meta-value" id="membership-detail-price">-</span>
+            </div>
+            <div>
+              <span class="meta-label">次回更新</span>
+              <span class="meta-value" id="membership-detail-next">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-switcher">
+          <button class="tab-btn active" data-tab="member-sets" onclick="App.switchMembershipTab('sets')">限定セット</button>
+          <button class="tab-btn" data-tab="member-recipes" onclick="App.switchMembershipTab('recipes')">限定レシピ</button>
+          <button class="tab-btn" data-tab="member-board" onclick="App.switchMembershipTab('board')">掲示板</button>
+          <button class="tab-btn" data-tab="member-info" onclick="App.switchMembershipTab('info')">メンバーシップ</button>
+        </div>
+
+        <div id="member-tab-sets" class="tab-content"></div>
+        <div id="member-tab-recipes" class="tab-content hidden"></div>
+        <div id="member-tab-board" class="tab-content hidden"></div>
+        <div id="member-tab-info" class="tab-content hidden"></div>
+      </main>
+    </div>
+
     <!-- 7. マイページ -->
     <div id="screen-mypage" class="screen">
       <header class="header header-main">
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-mypage"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-mypage"></span>
@@ -641,12 +920,22 @@
             <div class="profile-info">
               <div class="profile-name" id="mypage-name">あなた</div>
               <div class="profile-meta" id="mypage-account-label">ユーザー</div>
+              <div class="profile-sub" id="mypage-plan-label"></div>
             </div>
-            <button class="btn-text-small" onclick="App.showAccountTypeModal()">プランを変える</button>
+            <div class="mypage-profile-actions">
+              <button class="btn-text-small" onclick="App.showAccountTypeModal()">プラン変更</button>
+              <button class="btn-text-small hidden" id="mypage-profile-edit-btn" onclick="App.openMyProfileEditor()">プロフィール編集</button>
+            </div>
           </div>
 
+          <div class="tab-switcher mypage-tab-switcher" id="mypage-tab-switcher">
+            <button class="tab-btn active" data-tab="mypage-profile" onclick="App.switchMyPageTab('profile')">プロフィール</button>
+            <button class="tab-btn" data-tab="mypage-settings" onclick="App.switchMyPageTab('settings')">設定</button>
+          </div>
+
+          <div id="mypage-tab-profile" class="tab-content">
           <div class="section-header">
-            <span class="section-label">わたしの記録</span>
+            <span class="section-label">ダッシュボード</span>
             <span class="section-meta" id="mypage-record-note"></span>
           </div>
           <div class="mypage-section-card dashboard-card">
@@ -669,17 +958,9 @@
               <span class="dashboard-meta-label">メンバーシップ</span>
               <span class="dashboard-meta-value" id="mypage-membership-count"></span>
             </div>
-          </div>
 
-          <div id="mypage-creator-panel" class="hidden">
-            <div class="section-header">
-              <span class="section-label">クリエイター実績</span>
-              <span class="section-meta">配信状況</span>
-            </div>
-            <div class="mypage-section-card">
-              <p class="mypage-section-desc">
-                公開したセットの反応をまとめます。
-              </p>
+            <div id="mypage-creator-panel" class="hidden">
+              <div class="dashboard-subtitle">クリエイター実績</div>
               <div class="creator-metrics">
                 <div class="creator-metric">
                   <span class="metric-label">公開セット</span>
@@ -706,39 +987,80 @@
             </div>
           </div>
 
-          <div id="mypage-creator-profile" class="hidden">
+          <div id="mypage-membership-section">
             <div class="section-header">
-              <span class="section-label">公開プロフィール</span>
-              <span class="section-meta" id="creator-profile-status"></span>
+              <span class="section-label">加入中メンバーシップ</span>
+              <span class="section-meta" id="mypage-membership-note"></span>
             </div>
-            <div class="mypage-section-card">
-              <p class="mypage-section-desc">
-                あなたを知ってもらうための紹介ページです。
-              </p>
-              <div class="creator-profile-card">
-                <div class="creator-profile-name" id="creator-profile-name"></div>
-                <div class="creator-profile-bio" id="creator-profile-bio"></div>
-              </div>
-              <div class="mypage-section-actions">
-                <button class="btn-secondary" onclick="App.showCreatorProfileModal()">
-                  公開プロフィールを編集
-                </button>
-              </div>
+            <div id="mypage-membership-empty" class="empty-state hidden">
+              <div class="empty-illustration">🤝</div>
+              <p class="empty-text">まだ加入中のメンバーシップはありません</p>
+              <p class="empty-subtext">気になる料理家のプランを探してみましょう</p>
+            </div>
+            <div id="mypage-membership-list" class="membership-list">
+              <!-- メンバーシップ一覧 -->
+            </div>
+            <div class="mypage-section-actions">
+              <button class="btn-secondary" onclick="App.showScreen('public')">
+                レシピカタログを見る
+              </button>
             </div>
           </div>
 
-          <div class="section-header">
-            <span class="section-label">アーカイブ</span>
-            <span class="section-meta" id="mypage-archive-note"></span>
-          </div>
-          <div class="mypage-section-card">
-            <p class="mypage-section-desc">
-              作った日ごとのレシピを、写真とひとことでまとめて見返せます。
-            </p>
-            <div class="mypage-section-actions">
-              <button class="btn-secondary" onclick="App.showScreen('archive')">
-                アーカイブを開く
-              </button>
+          <div id="mypage-creator-membership" class="hidden">
+            <div class="section-header">
+              <span class="section-label">メンバーシップ管理</span>
+              <span class="section-meta" id="creator-membership-note"></span>
+            </div>
+            <div class="mypage-section-card">
+              <p class="mypage-section-desc">
+                プランや掲示板、限定コンテンツをここから整えます。
+              </p>
+              <div class="creator-membership-summary">
+                <div class="creator-membership-title" id="creator-membership-title"></div>
+                <div class="creator-membership-desc" id="creator-membership-desc"></div>
+              </div>
+              <div class="creator-membership-meta">
+                <span>プラン <strong id="creator-plan-count">0</strong></span>
+                <span>限定コンテンツ <strong id="creator-member-content-count">0件</strong></span>
+              </div>
+              <div class="mypage-section-actions">
+                <button class="btn-secondary" onclick="App.showCreatorMembershipModal()">概要を編集</button>
+                <button class="btn-secondary" onclick="App.openCreatorPlanModal()">プランを追加</button>
+                <button class="btn-secondary" onclick="App.showChefDetail(App.getCreatorChefId())">プレビュー</button>
+              </div>
+            </div>
+
+            <div class="mypage-section-card">
+              <div class="creator-section-header">
+                <span class="creator-section-label">プラン一覧</span>
+              </div>
+              <div id="creator-plan-list"></div>
+            </div>
+
+            <div class="mypage-section-card">
+              <div class="creator-section-header">
+                <span class="creator-section-label">掲示板</span>
+              </div>
+              <div id="creator-board-list"></div>
+              <div class="mypage-section-actions">
+                <button class="btn-secondary" onclick="App.openCreatorBoardModal()">スレッドを作成</button>
+              </div>
+            </div>
+
+            <div class="mypage-section-card">
+              <div class="creator-section-header">
+                <span class="creator-section-label">公開コンテンツ</span>
+              </div>
+              <div id="creator-publish-list"></div>
+              <div class="mypage-section-actions">
+                <button class="btn-secondary" onclick="App.showScreen('recipes'); App.switchMyTab('recipes')">
+                  レシピ帳から公開
+                </button>
+                <button class="btn-secondary" onclick="App.showScreen('recipes'); App.switchMyTab('sets')">
+                  セットから公開
+                </button>
+              </div>
             </div>
           </div>
 
@@ -758,16 +1080,17 @@
           </div>
 
           <div class="section-header">
-            <span class="section-label">お支払い</span>
-            <span class="section-meta" id="mypage-payment-label"></span>
+            <span class="section-label">アーカイブ</span>
+            <span class="section-meta" id="mypage-archive-note"></span>
           </div>
           <div class="mypage-section-card">
-            <div class="payment-card" id="mypage-payment-body"></div>
+            <p class="mypage-section-desc">
+              作った日ごとのレシピを、写真とひとことでまとめて見返せます。
+            </p>
             <div class="mypage-section-actions">
-              <button class="btn-secondary" onclick="App.showPaymentModal()">
-                登録 / 変更
+              <button class="btn-secondary" onclick="App.showScreen('archive')">
+                アーカイブを開く
               </button>
-              <button class="btn-text" id="btn-payment-delete" onclick="App.clearPaymentMethod()">削除</button>
             </div>
           </div>
 
@@ -789,18 +1112,64 @@
             </button>
           </div>
 
-          <div class="section-header">
-            <span class="section-label">設定</span>
           </div>
-          <div class="mypage-placeholder-list">
-            <div class="mypage-placeholder-item">
-              <span>通知設定</span>
-              <span class="placeholder-badge">準備中</span>
+
+          <div id="mypage-tab-settings" class="tab-content hidden">
+            <div class="section-header">
+              <span class="section-label">お支払い</span>
+              <span class="section-meta" id="mypage-payment-label"></span>
             </div>
-            <div class="mypage-placeholder-item">
-              <span>ヘルプ / フィードバック</span>
-              <span class="placeholder-badge">準備中</span>
+            <div class="mypage-section-card">
+              <div class="payment-card" id="mypage-payment-body"></div>
+              <div class="mypage-section-actions">
+                <button class="btn-secondary" onclick="App.showPaymentModal()">
+                  登録 / 変更
+                </button>
+                <button class="btn-text" id="btn-payment-delete" onclick="App.clearPaymentMethod()">削除</button>
+                <button class="btn-text-small" onclick="App.showScreen('payment-history')">決済履歴を見る</button>
+              </div>
             </div>
+
+            <div class="section-header">
+              <span class="section-label">通知</span>
+            </div>
+            <div class="mypage-settings-list">
+              <div class="setting-item">
+                <div>
+                  <div class="setting-title">プッシュ通知</div>
+                  <div class="setting-desc">あなた宛ての通知を受け取る</div>
+                </div>
+                <button class="btn-toggle" id="mypage-push-toggle" onclick="App.togglePushNotifications()">ON</button>
+              </div>
+              <div class="setting-item">
+                <div>
+                  <div class="setting-title">フォロー通知</div>
+                  <div class="setting-desc">フォロー中: <span id="mypage-followed-count">0人</span></div>
+                </div>
+                <button class="btn-mini btn-mini-ghost" onclick="App.showNotifications()">通知一覧</button>
+              </div>
+            </div>
+
+            <div class="section-header">
+              <span class="section-label">ユーザー設定</span>
+            </div>
+            <div class="mypage-settings-list">
+              <div class="setting-item">
+                <div>
+                  <div class="setting-title">アカウントタイプ</div>
+                  <div class="setting-desc">使い方に合わせて切り替え</div>
+                </div>
+                <button class="btn-mini btn-mini-ghost" onclick="App.showAccountTypeModal()">変更</button>
+              </div>
+              <div class="setting-item">
+                <div>
+                  <div class="setting-title">ヘルプ / フィードバック</div>
+                  <div class="setting-desc">困った時はいつでも</div>
+                </div>
+                <span class="placeholder-badge">準備中</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </main>
@@ -828,11 +1197,17 @@
           <span class="material-icons-round">arrow_back</span>
         </button>
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-archive"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-archive"></span>
@@ -888,11 +1263,17 @@
           <span class="material-icons-round">arrow_back</span>
         </button>
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-diagnosis"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-diagnosis"></span>
@@ -927,11 +1308,17 @@
           <span class="material-icons-round">arrow_back</span>
         </button>
         <div class="header-logo">
-          <span class="logo-icon">🍽️</span>
-          <span class="logo-text">kondate loop</span>
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
           <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
-        <div class="header-actions-single">
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-purchases"></span>
+          </button>
           <button class="header-action has-badge" onclick="App.showFridge()">
             <span class="material-icons-round">kitchen</span>
             <span class="action-badge" id="badge-fridge-purchases"></span>
@@ -950,6 +1337,51 @@
         </div>
         <div id="purchase-list-full" class="mypage-list">
           <!-- 購入履歴一覧 -->
+        </div>
+        <div class="mypage-section-actions">
+          <button class="btn-secondary" onclick="App.showScreen('public')">
+            レシピカタログを見る
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <!-- 11. 決済履歴 -->
+    <div id="screen-payment-history" class="screen">
+      <header class="header header-sub">
+        <button class="header-back" onclick="App.goBack('mypage')">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <div class="header-logo">
+          <button class="logo-button" onclick="App.showScreen('main')">
+            <span class="logo-icon">🍽️</span>
+            <span class="logo-text">kondate loop</span>
+          </button>
+          <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
+        </div>
+        <div class="header-actions">
+          <button class="header-action has-badge" onclick="App.showNotifications()">
+            <span class="material-icons-round">notifications</span>
+            <span class="action-badge" id="badge-notif-payment-history"></span>
+          </button>
+          <button class="header-action has-badge" onclick="App.showFridge()">
+            <span class="material-icons-round">kitchen</span>
+            <span class="action-badge" id="badge-fridge-payment-history"></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="main-content with-header">
+        <h2 class="screen-title">決済履歴</h2>
+        <p class="section-description">購入やサブスクの履歴をまとめて確認できます。</p>
+
+        <div id="payment-history-empty" class="empty-state hidden">
+          <div class="empty-illustration">💳</div>
+          <p class="empty-text">まだ決済履歴がありません</p>
+          <p class="empty-subtext">購入や加入がここに残ります</p>
+        </div>
+        <div id="payment-history-list" class="mypage-list">
+          <!-- 決済履歴一覧 -->
         </div>
         <div class="mypage-section-actions">
           <button class="btn-secondary" onclick="App.showScreen('public')">
@@ -1080,6 +1512,12 @@
               <button class="filter-chip" data-group="rating" data-value="新着" onclick="App.toggleFilterChip(this)">新着</button>
             </div>
           </div>
+          <div class="filter-section" data-filter-context="public">
+            <div class="filter-section-title">フォロー</div>
+            <div class="filter-chip-group">
+              <button class="filter-chip" data-group="follow" data-value="フォロー中" onclick="App.toggleFilterChip(this)">フォロー中</button>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn-secondary" onclick="App.resetFilters()">リセット</button>
@@ -1110,7 +1548,7 @@
               <span class="option-desc">セットを公開して届ける（お支払いあり）</span>
             </button>
             <button class="account-type-option" onclick="App.applyAccountType('paid')">
-              <span>有料クリエイター</span>
+              <span>クリエイター+</span>
               <span class="option-desc">有料セットを配信する（お支払いあり）</span>
             </button>
           </div>
@@ -1210,6 +1648,213 @@
         </div>
       </div>
     </div>
+
+    <!-- ユーザープロフィールモーダル -->
+    <div id="modal-user-profile" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">プロフィール</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="mypage-profile-card user-profile-card">
+            <div class="profile-avatar" id="user-profile-avatar">🙂</div>
+            <div class="profile-info">
+              <div class="profile-name" id="user-profile-name">あなた</div>
+              <div class="profile-meta" id="user-profile-type">ユーザー</div>
+            </div>
+          </div>
+          <p class="modal-guide-text" id="user-profile-note"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.showScreen('mypage'); App.closeModal();">マイページへ</button>
+          <button class="btn-primary" onclick="App.closeModal()">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- メンバーシップ概要モーダル -->
+    <div id="modal-creator-membership" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">メンバーシップ概要</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">タイトル</label>
+            <input type="text" id="creator-membership-title-input" class="form-input" placeholder="例: 季節を楽しむメンバーシップ">
+          </div>
+          <div class="form-group">
+            <label class="form-label">概要</label>
+            <textarea id="creator-membership-summary-input" class="import-textarea" placeholder="どんな内容かを簡単に"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ウェルカムガイド</label>
+            <textarea id="creator-membership-welcome-input" class="import-textarea" placeholder="最初に伝えたいこと"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App.saveCreatorMembershipInfo()">保存する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- メンバーシッププランモーダル -->
+    <div id="modal-creator-plan" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">プランを編集</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">プラン名</label>
+            <input type="text" id="creator-plan-name" class="form-input" placeholder="例: スタンダード">
+          </div>
+          <div class="form-group">
+            <label class="form-label">価格</label>
+            <input type="number" id="creator-plan-price" class="form-input" placeholder="500" min="0" step="10">
+          </div>
+          <div class="form-group">
+            <label class="form-label">説明</label>
+            <textarea id="creator-plan-desc" class="import-textarea" placeholder="プランの内容"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">おすすめ</label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="creator-plan-recommended">
+              おすすめプランにする
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App.saveCreatorPlan()">保存する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 公開設定モーダル -->
+    <div id="modal-creator-publish" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">レシピカタログに公開</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-guide-text">対象: <span id="creator-publish-target"></span></p>
+          <div class="form-group">
+            <label class="form-label">公開ルール</label>
+            <select id="creator-publish-access" class="form-input" onchange="App.updatePublishAccessUI()">
+              <option value="free">フリー</option>
+              <option value="paid">有料</option>
+              <option value="membership">メンバー限定</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">価格（有料の場合）</label>
+            <input type="number" id="creator-publish-price" class="form-input" placeholder="500" min="0" step="10">
+          </div>
+          <div class="form-group">
+            <label class="form-label">タグ</label>
+            <input type="text" id="creator-publish-tags" class="form-input" placeholder="例: 時短, 家族向け, 作り置き">
+            <p class="modal-guide-text">カンマ区切りで入力できます。</p>
+          </div>
+          <p class="modal-guide-text">メンバー限定にすると、プラン加入者だけが見られます。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-text hidden" id="creator-publish-remove" onclick="App.unpublishCreatorContent()">公開を停止</button>
+          <button class="btn-primary" onclick="App.saveCreatorPublish()">公開する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 外部共有モーダル -->
+    <div id="modal-share" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">外部共有</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-guide-text">対象: <span id="share-target-name"></span></p>
+          <div class="form-group">
+            <label class="form-label">作成者名</label>
+            <input type="text" id="share-creator-name" class="form-input" placeholder="例: いつき / 田中シェフ">
+          </div>
+          <div class="form-group">
+            <label class="form-label">出典元URL</label>
+            <input type="url" id="share-source-url" class="form-input" placeholder="https://...">
+          </div>
+          <p class="modal-guide-text">作成者名か出典元URLのどちらかは必須です。</p>
+          <div class="form-group">
+            <label class="form-label">共有URL</label>
+            <div class="share-url-row">
+              <input type="text" id="share-url" class="form-input" readonly>
+              <button class="btn-secondary" onclick="App.copyShareUrl()">URLをコピー</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App.saveShareInfo()">保存する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 掲示板投稿モーダル -->
+    <div id="modal-creator-board" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">掲示板を更新</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">タイトル</label>
+            <input type="text" id="creator-board-title" class="form-input" placeholder="例: 今週の更新">
+          </div>
+          <div class="form-group">
+            <label class="form-label">本文</label>
+            <textarea id="creator-board-body" class="import-textarea" placeholder="メンバーへのお知らせ"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">固定投稿</label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="creator-board-pin">
+              固定投稿として表示する
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App.saveCreatorBoardThread()">保存する</button>
+        </div>
+      </div>
+    </div>
+
+    <datalist id="creator-name-options"></datalist>
 
     <!-- 料理ログ編集モーダル -->
     <div id="modal-cooking-log" class="modal hidden">
@@ -1400,6 +2045,111 @@
             <span class="material-icons-round">check</span>
             買い物完了！
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- メンバーシップ決済モーダル -->
+    <div id="modal-membership-checkout" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">メンバーシップ加入</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-guide-text">以下のプランに加入します。</p>
+          <div class="checkout-summary">
+            <div class="checkout-row">
+              <span>料理家</span>
+              <span id="membership-checkout-chef">料理家</span>
+            </div>
+            <div class="checkout-row">
+              <span>プラン</span>
+              <span id="membership-checkout-plan">プラン</span>
+            </div>
+          </div>
+          <p class="modal-guide-text">決済完了後、限定コンテンツが見られます。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App.completeMembershipJoin()">決済する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- メンバーシップ加入完了 -->
+    <div id="modal-membership-success" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-body modal-success">
+          <div class="success-icon">🎉</div>
+          <h2 class="modal-title">加入しました</h2>
+          <p class="modal-guide-text">限定セットと掲示板が見られるようになりました。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">閉じる</button>
+          <button class="btn-primary" onclick="App.showMembershipDetail(App.currentMembershipChefId); App.closeModal();">
+            メンバーシップを見る
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 掲示板スレッド -->
+    <div id="modal-board-thread" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2 class="modal-title" id="board-thread-title">掲示板</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="board-thread-body" id="board-thread-body"></p>
+          <div class="board-comment-list" id="board-thread-comments"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 通知モーダル -->
+    <div id="modal-notification" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title" id="notification-modal-title">通知</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="notification-modal-body"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 購入後の保存モーダル -->
+    <div id="modal-purchase-save" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closePurchaseSavePrompt()"></div>
+      <div class="modal-content modal-small">
+        <div class="modal-header">
+          <h2 class="modal-title">レシピ帳に保存</h2>
+          <button class="modal-close" onclick="App.closePurchaseSavePrompt()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-guide-text" id="purchase-save-message">レシピ帳に保存しましょう</p>
+          <div class="purchase-save-target">
+            <span class="purchase-save-type" id="purchase-save-type">レシピ</span>
+            <span class="purchase-save-name" id="purchase-save-name"></span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" onclick="App.confirmPurchaseSave()">保存する</button>
         </div>
       </div>
     </div>

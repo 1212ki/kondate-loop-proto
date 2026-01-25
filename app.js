@@ -11,6 +11,8 @@ const App = {
     currentScreen: 'onboarding',
     recipes: [],           // ユーザーのレシピ
     sets: [],              // ユーザーのセット
+    hiddenSampleSetIds: [], // レシピ帳から非表示にしたスターターセットID
+    sampleSetShareInfo: {}, // スターターセットの共有情報
     currentSet: null,      // 現在選択中のセット
     nextSet: null,         // 次の献立
     setHistory: [],        // 過去の献立履歴 [{set, endedAt, cookedRecipes}]
@@ -38,6 +40,17 @@ const App = {
     purchasedRecipeIds: [], // 購入済みレシピID
     purchasedPublicSetIds: [], // 購入済み公開セットID
     membershipCount: 0,    // メンバーシップ加入数（ユーザー向け）
+    membershipSubscriptions: [], // [{id, chefId, planId, status, startedAt, currentPeriodEnd, price}]
+    creatorMembershipInfo: null, // {title, summary, welcome}
+    creatorMembershipPlans: [], // クリエイター自身のプラン
+    creatorPublishedRecipes: [], // 公開レシピ（クリエイター作成）
+    creatorPublishedSets: [], // 公開セット（クリエイター作成）
+    creatorBoardThreads: [], // 掲示板スレッド（クリエイター作成）
+    followedChefs: [],     // [{chefId, notifyEnabled}]
+    notifications: [],     // [{id, category, title, message, sourceType, sourceName, createdAt, readAt}]
+    notificationSettings: {
+      pushEnabled: true,
+    },
     sampleDataSeeded: false,
     subscriptionStatus: 'inactive', // paidの場合の状態
     creatorStatus: 'not_started', // not_started / pending / approved
@@ -46,6 +59,7 @@ const App = {
   },
 
   // UI状態（保存しない）
+  creatorChefId: 'chef-self',
   currentMyTab: 'recipes',
   mySelectedTag: null,
   selectorTab: 'my', // レシピ選択モーダルのタブ（my / public）
@@ -54,6 +68,19 @@ const App = {
   historySelectedDate: null,
   pendingCookingLogId: null,
   pendingCookingLogPhoto: '',
+  currentChefId: null,
+  currentChefTab: 'home',
+  currentChefSort: 'newest',
+  currentChefFilter: 'all',
+  chefSearchQuery: '',
+  currentMyPageTab: 'profile',
+  currentMembershipChefId: null,
+  currentMembershipTab: 'sets',
+  currentNotificationTab: 'news',
+  pendingMembershipPlanId: null,
+  pendingShareTarget: null,
+  pendingPurchaseSave: null,
+  currentBoardThreadId: null,
 
   // オンボーディング状態
   onboarding: {
@@ -68,6 +95,140 @@ const App = {
   // ========================================
   // 公開レシピデータ
   // ========================================
+  chefs: [
+    {
+      id: 'chef-001',
+      name: '田中シェフ',
+      avatar: '👨‍🍳',
+      bio: '平日の時短ごはんを研究する料理家。手間を減らして、ちゃんとおいしい。',
+      summary: '5分で回せるごはん',
+      links: [
+        { label: 'YouTube', url: 'https://example.com/chef-001-youtube' },
+        { label: 'Instagram', url: 'https://example.com/chef-001-instagram' },
+      ],
+    },
+    {
+      id: 'chef-002',
+      name: 'おばあちゃんの台所',
+      avatar: '👵',
+      bio: 'ほっとする和食を届ける台所。定番を丁寧に。',
+      summary: 'やさしい和食',
+      links: [
+        { label: 'Instagram', url: 'https://example.com/chef-002-instagram' },
+      ],
+    },
+    {
+      id: 'chef-003',
+      name: '野菜ソムリエYuki',
+      avatar: '🥬',
+      bio: '季節の野菜で身体を整える献立を提案。',
+      summary: '野菜で整える',
+      links: [
+        { label: 'X', url: 'https://example.com/chef-003-x' },
+        { label: 'YouTube', url: 'https://example.com/chef-003-youtube' },
+      ],
+    },
+  ],
+  membershipPlans: [
+    {
+      id: 'plan-001',
+      chefId: 'chef-001',
+      name: 'スタンダード',
+      price: 500,
+      recommended: true,
+      description: '限定セットと掲示板が見られるプラン。',
+    },
+    {
+      id: 'plan-002',
+      chefId: 'chef-001',
+      name: 'プレミアム',
+      price: 980,
+      recommended: false,
+      description: '限定レシピ + 季節セット + 料理家の裏話。',
+    },
+    {
+      id: 'plan-003',
+      chefId: 'chef-003',
+      name: 'ベジライト',
+      price: 300,
+      recommended: true,
+      description: '野菜中心の限定レシピと掲示板。',
+    },
+    {
+      id: 'plan-004',
+      chefId: 'chef-003',
+      name: 'ベジフル',
+      price: 800,
+      recommended: false,
+      description: '限定セットと季節のメニュー先行公開。',
+    },
+  ],
+  boardThreads: [
+    {
+      id: 'thread-001',
+      chefId: 'chef-001',
+      title: '今週の作り置きメモ',
+      body: '冷蔵庫にあるもので回せる簡単な作り置きをまとめました。',
+      pinned: true,
+      createdAt: '2026-01-25',
+    },
+    {
+      id: 'thread-002',
+      chefId: 'chef-001',
+      title: '味変の小ネタ',
+      body: '生姜焼きのタレにレモンを足すと軽くなるよ。',
+      pinned: false,
+      createdAt: '2026-01-20',
+    },
+    {
+      id: 'thread-003',
+      chefId: 'chef-003',
+      title: '野菜の保存のコツ',
+      body: '葉物はキッチンペーパーで包むと持ちが良いです。',
+      pinned: true,
+      createdAt: '2026-01-23',
+    },
+  ],
+  boardComments: [
+    {
+      id: 'comment-001',
+      threadId: 'thread-001',
+      userName: 'さくら',
+      body: '週末の作り置きにぴったりでした！',
+      createdAt: '2026-01-25',
+    },
+    {
+      id: 'comment-002',
+      threadId: 'thread-002',
+      userName: 'ひなた',
+      body: 'レモン入れるの試してみます。',
+      createdAt: '2026-01-22',
+    },
+    {
+      id: 'comment-003',
+      threadId: 'thread-003',
+      userName: 'りん',
+      body: '白菜が長持ちしました、ありがとうございます。',
+      createdAt: '2026-01-24',
+    },
+  ],
+  chefByRecipeId: {
+    'pub-001': 'chef-001',
+    'pub-004': 'chef-001',
+    'pub-006': 'chef-001',
+    'pub-008': 'chef-001',
+    'pub-002': 'chef-002',
+    'pub-003': 'chef-002',
+    'pub-005': 'chef-003',
+    'pub-007': 'chef-003',
+    'pub-009': 'chef-002',
+  },
+  chefBySetId: {
+    'chef-001': 'chef-001',
+    'chef-002': 'chef-002',
+    'chef-003': 'chef-003',
+    'chef-001-paid': 'chef-001',
+  },
   publicRecipes: [
     {
       id: 'pub-001',
@@ -243,6 +404,7 @@ const App = {
       servings: 2,
       tags: ['中華', '時短', '野菜'],
       price: 100,
+      membership: true,
       ingredients: [
         { name: '豚バラ肉', amount: 100, unit: 'g' },
         { name: 'キャベツ', amount: 200, unit: 'g' },
@@ -256,6 +418,28 @@ const App = {
         '火の通りにくい野菜（にんじん）から順に加える',
         '鶏がらスープの素・塩こしょうで味付け',
         '強火で手早く炒めて完成',
+      ],
+    },
+    {
+      id: 'pub-009',
+      name: '和風ハンバーグ',
+      emoji: '🍖',
+      servings: 2,
+      tags: ['和食', 'おうちごはん'],
+      price: 200,
+      ingredients: [
+        { name: '合挽き肉', amount: 250, unit: 'g' },
+        { name: '玉ねぎ', amount: 0.5, unit: '個' },
+        { name: 'パン粉', amount: 30, unit: 'g' },
+        { name: '卵', amount: 1, unit: '個' },
+        { name: '醤油', amount: 1, unit: '大さじ' },
+      ],
+      steps: [
+        '玉ねぎをみじん切りにして炒める',
+        'ひき肉・玉ねぎ・パン粉・卵・醤油を混ぜる',
+        '小判型に成形する',
+        'フライパンで両面を焼く',
+        '火が通ったら完成',
       ],
     },
   ],
@@ -347,6 +531,7 @@ const App = {
       recipeIds: ['pub-001', 'pub-004', 'pub-005', 'pub-006', 'pub-008'],
       tags: ['時短', '平日'],
       price: 500,
+      membership: true,
     },
     {
       id: 'chef-002',
@@ -362,6 +547,16 @@ const App = {
       recipeIds: ['pub-003', 'pub-008', 'pub-007'],
       tags: ['野菜', 'ヘルシー'],
       price: 500,
+      membership: true,
+    },
+    {
+      id: 'chef-001-paid',
+      name: '週末ごちそうセット',
+      author: '田中シェフ',
+      recipeIds: ['pub-002', 'pub-003', 'pub-009'],
+      tags: ['週末', 'ごちそう'],
+      price: 800,
+      membership: false,
     },
   ],
 
@@ -373,8 +568,8 @@ const App = {
     public: 'おすすめ順',
   },
   filterState: {
-    my: { status: [], time: [], tag: [], rating: [] },
-    public: { status: [], time: [], tag: [], rating: [] },
+    my: { status: [], time: [], tag: [], rating: [], follow: [] },
+    public: { status: [], time: [], tag: [], rating: [], follow: [] },
   },
   activeFilterContext: 'my',
   activeSortContext: 'my',
@@ -420,6 +615,366 @@ const App = {
     return recipe || null;
   },
 
+  getChefById(chefId) {
+    return this.chefs.find(chef => chef.id === chefId) || null;
+  },
+
+  getCreatorChefId() {
+    return this.creatorChefId;
+  },
+
+  isCreatorAccount() {
+    return this.state.accountType === 'creator' || this.state.accountType === 'paid';
+  },
+
+  ensureCreatorChef() {
+    const chefId = this.getCreatorChefId();
+    const profile = this.state.creatorProfile || {};
+    const membershipInfo = this.state.creatorMembershipInfo || {};
+    const displayName = profile.displayName || this.state.profile?.name || 'あなた';
+    const summary = membershipInfo.title || 'メンバーシップ';
+    const bio = profile.bio || '';
+    const existing = this.chefs.find(chef => chef.id === chefId);
+    const nextChef = {
+      id: chefId,
+      name: displayName,
+      avatar: '🧑‍🍳',
+      bio,
+      summary,
+      links: [],
+    };
+    if (existing) {
+      Object.assign(existing, nextChef);
+    } else {
+      this.chefs.push(nextChef);
+    }
+  },
+
+  renderCreatorNameOptions() {
+    const list = document.getElementById('creator-name-options');
+    if (!list) return;
+    const names = new Set();
+    const profileName = this.state.profile?.name || 'あなた';
+    if (profileName) names.add(profileName);
+    const creatorName = this.state.creatorProfile?.displayName;
+    if (creatorName) names.add(creatorName);
+    (this.chefs || []).forEach(chef => {
+      if (chef?.name) names.add(chef.name);
+    });
+    list.innerHTML = '';
+    names.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      list.appendChild(option);
+    });
+  },
+
+  getRecipeChefId(recipe) {
+    if (!recipe) return null;
+    return recipe.chefId || this.chefByRecipeId[recipe.id] || null;
+  },
+
+  getSetChefId(set) {
+    if (!set) return null;
+    return set.chefId || this.chefBySetId[set.id] || null;
+  },
+
+  getChefLabel(chefId) {
+    const chef = this.getChefById(chefId);
+    return chef ? chef.name : '料理家';
+  },
+
+  getRecipeSourceLabel(recipe) {
+    if (!recipe) return 'オリジナル';
+    const chefId = recipe.chefId || (recipe.id && recipe.id.startsWith('pub-') ? this.getRecipeChefId(recipe) : null);
+    if (chefId) return this.getChefLabel(chefId);
+    return 'オリジナル';
+  },
+
+  getRecipeCreatorInfo(recipe) {
+    const chefId = this.getRecipeChefId(recipe);
+    if (chefId) {
+      return { type: 'chef', id: chefId, name: this.getChefLabel(chefId), role: '料理家' };
+    }
+    const displayName = this.state.creatorProfile?.displayName || this.state.profile?.name || 'あなた';
+    if (this.isCreatorAccount()) {
+      return { type: 'chef', id: this.getCreatorChefId(), name: displayName, role: '料理家' };
+    }
+    return { type: 'user', id: 'user-self', name: displayName, role: 'ユーザー' };
+  },
+
+  openCreatorProfile(type, id) {
+    if (type === 'chef' && id) {
+      this.showChefDetail(id);
+      return;
+    }
+    this.showUserProfile();
+  },
+
+  buildCreatorChip(info, stopPropagation = true) {
+    if (!info) return '';
+    const stop = stopPropagation ? 'event.stopPropagation();' : '';
+    return `
+      <button class="chef-chip" onclick="${stop}App.openCreatorProfile('${info.type}', '${info.id || ''}')">
+        <span class="material-icons-round">person</span>
+        ${info.name}
+      </button>
+    `;
+  },
+
+  buildCreatorDetailLink(info) {
+    if (!info) return '';
+    return `
+      <div class="detail-chef">
+        <button class="chef-link-btn" onclick="App.openCreatorProfile('${info.type}', '${info.id || ''}')">
+          <span class="material-icons-round">person</span>
+          ${info.name}
+        </button>
+      </div>
+    `;
+  },
+
+  canPublishRecipe(recipe) {
+    if (!recipe) return false;
+    const chefId = recipe.chefId || '';
+    if (recipe.id.startsWith('pub-')) return false;
+    if (recipe.sourceRecipeId) return false;
+    if (chefId && chefId !== this.getCreatorChefId()) return false;
+    return true;
+  },
+
+  canPublishSet(set) {
+    if (!set) return false;
+    const chefId = set.chefId || '';
+    if (set.sourceSetId) return false;
+    if (chefId && chefId !== this.getCreatorChefId()) return false;
+    const recipeIds = Array.isArray(set.recipeIds) ? set.recipeIds : [];
+    for (const recipeId of recipeIds) {
+      if (recipeId.startsWith('pub-')) return false;
+      const recipe = this.state.recipes.find(item => item.id === recipeId);
+      if (!recipe) return false;
+      if (recipe.sourceRecipeId) return false;
+      if (recipe.chefId && recipe.chefId !== this.getCreatorChefId()) return false;
+    }
+    return true;
+  },
+
+  canShareRecipe(recipe) {
+    if (!recipe) return false;
+    if (recipe.id.startsWith('pub-')) return false;
+    return true;
+  },
+
+  canShareSet(set) {
+    return !!set;
+  },
+
+  getDefaultShareCreatorName(item) {
+    if (!item) return '';
+    if (item.shareInfo?.creatorName) return item.shareInfo.creatorName;
+    if (item.originalAuthor) return item.originalAuthor;
+    if (item.author) return item.author;
+    if (this.isCreatorAccount()) {
+      return this.state.creatorProfile?.displayName || this.state.profile?.name || 'あなた';
+    }
+    return this.state.profile?.name || 'あなた';
+  },
+
+  getDefaultShareSourceUrl(item) {
+    if (!item) return '';
+    if (item.shareInfo?.sourceUrl) return item.shareInfo.sourceUrl;
+    if (item.sourceUrl) return item.sourceUrl;
+    if (item.url) return item.url;
+    return '';
+  },
+
+  buildShareUrl(type, item) {
+    const base = 'https://kondate-loop.app/share';
+    const shareId = item?.shareInfo?.shareId || item?.id;
+    if (!shareId) return '';
+    return `${base}/${type}/${shareId}`;
+  },
+
+  openShareModal(type, targetId) {
+    const isRecipe = type === 'recipe';
+    let item = isRecipe
+      ? this.state.recipes.find(recipe => recipe.id === targetId)
+      : this.state.sets.find(set => set.id === targetId);
+    let isSampleSet = false;
+    if (!item && !isRecipe) {
+      const sampleSet = this.sampleSets.find(set => String(set.id) === String(targetId));
+      if (sampleSet) {
+        const shareInfo = this.state.sampleSetShareInfo?.[sampleSet.id];
+        item = shareInfo ? { ...sampleSet, shareInfo: { ...shareInfo } } : { ...sampleSet };
+        isSampleSet = true;
+      }
+    }
+    if (!item) {
+      this.showToast('共有対象が見つかりませんでした');
+      return;
+    }
+    const canShare = isRecipe ? this.canShareRecipe(item) : this.canShareSet(item);
+    if (!canShare) {
+      const message = isRecipe
+        ? '引き込んだレシピは外部共有できません'
+        : '引き込んだレシピセットは外部共有できません';
+      this.showToast(message);
+      return;
+    }
+    this.pendingShareTarget = { type, id: targetId, source: isSampleSet ? 'sample' : 'user' };
+    document.getElementById('share-target-name').textContent = item.name || '';
+    document.getElementById('share-creator-name').value = this.getDefaultShareCreatorName(item);
+    document.getElementById('share-source-url').value = this.getDefaultShareSourceUrl(item);
+    document.getElementById('share-url').value = this.buildShareUrl(type, item);
+    document.getElementById('modal-share').classList.remove('hidden');
+  },
+
+  saveShareInfo() {
+    const target = this.pendingShareTarget;
+    if (!target) return;
+    const isRecipe = target.type === 'recipe';
+    let item = isRecipe
+      ? this.state.recipes.find(recipe => recipe.id === target.id)
+      : this.state.sets.find(set => set.id === target.id);
+    let isSampleSet = false;
+    if (!item && !isRecipe && target.source === 'sample') {
+      item = this.sampleSets.find(set => String(set.id) === String(target.id)) || null;
+      isSampleSet = !!item;
+    }
+    if (!item) {
+      this.showToast('共有対象が見つかりませんでした');
+      return;
+    }
+    const creatorName = document.getElementById('share-creator-name')?.value.trim() || '';
+    const sourceUrl = document.getElementById('share-source-url')?.value.trim() || '';
+    if (!creatorName && !sourceUrl) {
+      this.showToast('作成者名か出典元URLを入力してください');
+      return;
+    }
+    const shareId = item.shareInfo?.shareId || item.id;
+    const shareInfo = {
+      shareId,
+      creatorName,
+      sourceUrl,
+      sharedAt: item.shareInfo?.sharedAt || new Date().toISOString(),
+    };
+    if (isSampleSet) {
+      this.state.sampleSetShareInfo = this.state.sampleSetShareInfo || {};
+      this.state.sampleSetShareInfo[item.id] = { ...shareInfo };
+    } else {
+      item.shareInfo = shareInfo;
+    }
+    this.saveState();
+    const shareItem = isSampleSet ? { ...item, shareInfo } : item;
+    document.getElementById('share-url').value = this.buildShareUrl(target.type, shareItem);
+    this.showToast('共有内容を保存しました');
+  },
+
+  copyShareUrl() {
+    const input = document.getElementById('share-url');
+    if (!input) return;
+    const url = input.value.trim();
+    if (!url) {
+      this.showToast('共有URLがありません');
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(() => this.showToast('URLをコピーしました'))
+        .catch(() => this.fallbackCopyShareUrl(input));
+      return;
+    }
+    this.fallbackCopyShareUrl(input);
+  },
+
+  fallbackCopyShareUrl(input) {
+    input.focus();
+    input.select();
+    input.setSelectionRange(0, input.value.length);
+    const success = document.execCommand('copy');
+    this.showToast(success ? 'URLをコピーしました' : 'コピーに失敗しました');
+  },
+
+  getSetSourceLabel(set) {
+    if (!set) return 'オリジナル';
+    const chefId = set.chefId || this.getSetChefId(set);
+    if (chefId) return this.getChefLabel(chefId);
+    if (set.originalAuthor) return set.originalAuthor;
+    if (set.author) return set.author;
+    return 'オリジナル';
+  },
+
+  getCreatorMembershipInfo() {
+    return this.state.creatorMembershipInfo || { title: '', summary: '', welcome: '' };
+  },
+
+  getCreatorMembershipPlans() {
+    const chefId = this.getCreatorChefId();
+    return (this.state.creatorMembershipPlans || []).filter(plan => plan.chefId === chefId);
+  },
+
+  getAllMembershipPlans() {
+    return [
+      ...this.membershipPlans,
+      ...(this.state.creatorMembershipPlans || []),
+    ];
+  },
+
+  getMembershipPlansByChef(chefId) {
+    return this.getAllMembershipPlans().filter(plan => plan.chefId === chefId);
+  },
+
+  findMembershipPlanById(planId) {
+    return this.getAllMembershipPlans().find(plan => plan.id === planId) || null;
+  },
+
+  hydrateCreatorContent() {
+    const recipeIds = new Set(this.publicRecipes.map(item => item.id));
+    (this.state.creatorPublishedRecipes || []).forEach(recipe => {
+      if (!recipeIds.has(recipe.id)) {
+        this.publicRecipes.push(recipe);
+        recipeIds.add(recipe.id);
+      }
+    });
+    const setIds = new Set(this.publicSets.map(item => item.id));
+    (this.state.creatorPublishedSets || []).forEach(set => {
+      if (!setIds.has(set.id)) {
+        this.publicSets.push(set);
+        setIds.add(set.id);
+      }
+    });
+  },
+
+  getCreatorPublishedRecipeBySource(sourceRecipeId) {
+    return (this.state.creatorPublishedRecipes || []).find(recipe => recipe.sourceRecipeId === sourceRecipeId) || null;
+  },
+
+  getCreatorPublishedSetBySource(sourceSetId) {
+    return (this.state.creatorPublishedSets || []).find(set => set.sourceSetId === sourceSetId) || null;
+  },
+
+  getCreatorPublishedRecipeById(recipeId) {
+    return (this.state.creatorPublishedRecipes || []).find(recipe => recipe.id === recipeId) || null;
+  },
+
+  getCreatorPublishedSetById(setId) {
+    return (this.state.creatorPublishedSets || []).find(set => set.id === setId) || null;
+  },
+
+  getActiveSubscriptionByChef(chefId) {
+    const subs = Array.isArray(this.state.membershipSubscriptions) ? this.state.membershipSubscriptions : [];
+    return subs.find(sub => sub.chefId === chefId && (sub.status === 'active' || sub.status === 'canceling')) || null;
+  },
+
+  hasActiveMembership(chefId) {
+    if (!chefId) return false;
+    return !!this.getActiveSubscriptionByChef(chefId);
+  },
+
+  isChefFollowed(chefId) {
+    return (this.state.followedChefs || []).some(item => item.chefId === chefId);
+  },
+
   formatPrice(price) {
     return `¥${price}`;
   },
@@ -431,22 +986,47 @@ const App = {
     return `${year}/${month}/${day}`;
   },
 
+  syncMembershipCount() {
+    const subs = Array.isArray(this.state.membershipSubscriptions) ? this.state.membershipSubscriptions : [];
+    const activeCount = subs.filter(sub => sub.status === 'active' || sub.status === 'canceling').length;
+    this.state.membershipCount = activeCount;
+  },
+
   isRecipeSaved(recipe) {
-    return this.state.recipes.some(r => r.name === recipe.name);
+    return this.state.recipes.some(r => r.sourceRecipeId === recipe.id);
+  },
+
+  isPublicSetSaved(setId) {
+    if (!setId) return false;
+    return this.state.sets.some(set => set.sourceSetId === setId);
+  },
+
+  getPublicSetRegisterStatus(setId) {
+    if (!setId) return { isCurrent: false, isNext: false };
+    const matches = item =>
+      item && (item.id === `temp-${setId}` || item.sourceSetId === setId);
+    return {
+      isCurrent: matches(this.state.currentSet),
+      isNext: matches(this.state.nextSet),
+    };
   },
 
   getRecipeAccessInfo(recipe) {
     const price = Number(recipe.price || 0);
     const isMembership = !!recipe.membership;
-    const isMember = this.state.membershipCount > 0;
+    const chefId = this.getRecipeChefId(recipe);
+    const isOwner = this.isCreatorAccount() && chefId === this.getCreatorChefId();
+    const isMember = isMembership && (this.hasActiveMembership(chefId) || isOwner);
     const purchased = this.state.purchasedRecipeIds.includes(recipe.id);
-    const free = price <= 0;
-    const accessible = free || purchased || (isMembership && isMember);
+    const free = price <= 0 && !isMembership;
+    const accessible = free || purchased || isMember;
     let status = 'free';
     if (purchased) {
       status = 'purchased';
-    } else if (isMembership && isMember) {
+    } else if (isMember) {
       status = 'membership';
+    } else if (isMembership && price <= 0) {
+      status = 'locked';
     } else if (price > 0) {
       status = 'paid';
     }
@@ -454,6 +1034,7 @@ const App = {
       price,
       isMembership,
       isMember,
+      chefId,
       purchased,
       free,
       accessible,
@@ -463,17 +1044,28 @@ const App = {
 
   getSetAccessInfo(set) {
     const price = Number(set.price || 0);
+    const isMembership = !!set.membership;
+    const chefId = this.getSetChefId(set);
+    const isOwner = this.isCreatorAccount() && chefId === this.getCreatorChefId();
+    const isMember = isMembership && (this.hasActiveMembership(chefId) || isOwner);
     const purchased = this.state.purchasedPublicSetIds.includes(set.id);
-    const free = price <= 0;
-    const accessible = free || purchased;
+    const free = price <= 0 && !isMembership;
+    const accessible = free || purchased || isMember;
     let status = 'free';
     if (purchased) {
       status = 'purchased';
+    } else if (isMember) {
+      status = 'membership';
+    } else if (isMembership && price <= 0) {
+      status = 'locked';
     } else if (price > 0) {
       status = 'paid';
     }
     return {
       price,
+      isMembership,
+      isMember,
+      chefId,
       purchased,
       free,
       accessible,
@@ -488,6 +1080,9 @@ const App = {
     if (access.status === 'membership') {
       return '<span class="badge badge-member">メンバーシップ</span>';
     }
+    if (access.status === 'locked') {
+      return '<span class="badge badge-member">メンバー限定</span>';
+    }
     if (access.status === 'paid') {
       return `<span class="badge badge-paid">${this.formatPrice(access.price)}</span>`;
     }
@@ -495,7 +1090,7 @@ const App = {
   },
 
   buildMembershipBadge(access) {
-    if (access.isMembership && access.status !== 'membership') {
+    if (access.isMembership && access.status !== 'membership' && access.status !== 'locked') {
       return '<span class="badge badge-member-sub">メンバーシップ</span>';
     }
     return '';
@@ -534,6 +1129,66 @@ const App = {
         ${items}
       </div>
     `;
+  },
+
+  addNotification({ category, title, message, sourceType = 'system', sourceName = '' }) {
+    const notifications = Array.isArray(this.state.notifications) ? this.state.notifications : [];
+    notifications.unshift({
+      id: `noti-${Date.now()}`,
+      category,
+      title,
+      message,
+      sourceType,
+      sourceName,
+      createdAt: new Date().toISOString(),
+      readAt: null,
+    });
+    this.state.notifications = notifications;
+    this.saveState();
+  },
+
+  getUnreadNotificationCount() {
+    return (this.state.notifications || []).filter(n => !n.readAt).length;
+  },
+
+  markNotificationRead(notificationId) {
+    const notifications = Array.isArray(this.state.notifications) ? this.state.notifications : [];
+    notifications.forEach(n => {
+      if (n.id === notificationId && !n.readAt) {
+        n.readAt = new Date().toISOString();
+      }
+    });
+    this.state.notifications = notifications;
+    this.saveState();
+  },
+
+  markAllNotificationsRead() {
+    const notifications = Array.isArray(this.state.notifications) ? this.state.notifications : [];
+    notifications.forEach(n => {
+      if (!n.readAt) n.readAt = new Date().toISOString();
+    });
+    this.state.notifications = notifications;
+    this.saveState();
+  },
+
+  toggleFollowChef(chefId) {
+    const list = Array.isArray(this.state.followedChefs) ? this.state.followedChefs : [];
+    const existing = list.find(item => item.chefId === chefId);
+    if (existing) {
+      this.state.followedChefs = list.filter(item => item.chefId !== chefId);
+    } else {
+      list.push({ chefId, notifyEnabled: true });
+      this.state.followedChefs = list;
+      this.addNotification({
+        category: 'personal',
+        title: 'フォローしました',
+        message: `${this.getChefLabel(chefId)}をフォローしました。`,
+        sourceType: 'system',
+        sourceName: '',
+      });
+    }
+    this.saveState();
+    this.renderChefDetailScreen();
   },
 
   normalizeText(text) {
@@ -759,6 +1414,10 @@ const App = {
     }
     if (!Array.isArray(this.state.recipes)) this.state.recipes = [];
     if (!Array.isArray(this.state.sets)) this.state.sets = [];
+    if (!Array.isArray(this.state.hiddenSampleSetIds)) this.state.hiddenSampleSetIds = [];
+    if (!this.state.sampleSetShareInfo || typeof this.state.sampleSetShareInfo !== 'object') {
+      this.state.sampleSetShareInfo = {};
+    }
     if (!Array.isArray(this.state.setHistory)) this.state.setHistory = [];
     if (!Array.isArray(this.state.cookingLogs)) {
       this.state.cookingLogs = [];
@@ -791,6 +1450,22 @@ const App = {
     if (!Array.isArray(this.state.shoppingExtraItems)) this.state.shoppingExtraItems = [];
     if (!Array.isArray(this.state.shoppingChecked)) this.state.shoppingChecked = [];
     if (!Array.isArray(this.state.shoppingPurchased)) this.state.shoppingPurchased = [];
+    if (!Array.isArray(this.state.membershipSubscriptions)) this.state.membershipSubscriptions = [];
+    if (!this.state.creatorMembershipInfo) {
+      this.state.creatorMembershipInfo = { title: '', summary: '', welcome: '' };
+    }
+    if (!Array.isArray(this.state.creatorMembershipPlans)) this.state.creatorMembershipPlans = [];
+    if (!Array.isArray(this.state.creatorPublishedRecipes)) this.state.creatorPublishedRecipes = [];
+    if (!Array.isArray(this.state.creatorPublishedSets)) this.state.creatorPublishedSets = [];
+    if (!Array.isArray(this.state.creatorBoardThreads)) this.state.creatorBoardThreads = [];
+    if (!Array.isArray(this.state.followedChefs)) this.state.followedChefs = [];
+    if (!Array.isArray(this.state.notifications)) this.state.notifications = [];
+    if (!this.state.notificationSettings) {
+      this.state.notificationSettings = { pushEnabled: true };
+    }
+    if (typeof this.state.notificationSettings.pushEnabled !== 'boolean') {
+      this.state.notificationSettings.pushEnabled = true;
+    }
     if (!this.state.lastCompletedSetId) this.state.lastCompletedSetId = null;
     this.state.shoppingExtraItems = this.state.shoppingExtraItems.map((item, index) => {
       const id = item.id || `extra-${Date.now()}-${index}`;
@@ -827,6 +1502,44 @@ const App = {
     if (!this.state.subscriptionStatus) this.state.subscriptionStatus = 'inactive';
     if (!this.state.creatorStatus) this.state.creatorStatus = 'not_started';
     if (!this.state.diagnosis) this.state.diagnosis = null;
+    this.state.creatorMembershipInfo = {
+      title: this.state.creatorMembershipInfo.title || '',
+      summary: this.state.creatorMembershipInfo.summary || '',
+      welcome: this.state.creatorMembershipInfo.welcome || '',
+    };
+    this.state.creatorMembershipPlans = this.state.creatorMembershipPlans.map((plan, index) => ({
+      id: plan.id || `plan-self-${Date.now()}-${index}`,
+      chefId: plan.chefId || this.creatorChefId,
+      name: plan.name || 'プラン',
+      price: typeof plan.price === 'number' ? plan.price : parseFloat(plan.price) || 0,
+      description: plan.description || '',
+      recommended: !!plan.recommended,
+    }));
+    this.state.creatorPublishedRecipes = this.state.creatorPublishedRecipes.map((recipe, index) => ({
+      ...recipe,
+      id: recipe.id || `pub-self-${Date.now()}-${index}`,
+      chefId: recipe.chefId || this.creatorChefId,
+      sourceRecipeId: recipe.sourceRecipeId || recipe.id,
+      price: typeof recipe.price === 'number' ? recipe.price : parseFloat(recipe.price) || 0,
+      membership: !!recipe.membership,
+    }));
+    this.state.creatorPublishedSets = this.state.creatorPublishedSets.map((set, index) => ({
+      ...set,
+      id: set.id || `pubset-self-${Date.now()}-${index}`,
+      chefId: set.chefId || this.creatorChefId,
+      sourceSetId: set.sourceSetId || set.id,
+      price: typeof set.price === 'number' ? set.price : parseFloat(set.price) || 0,
+      membership: !!set.membership,
+    }));
+    this.state.creatorBoardThreads = this.state.creatorBoardThreads.map((thread, index) => ({
+      ...thread,
+      id: thread.id || `thread-self-${Date.now()}-${index}`,
+      chefId: thread.chefId || this.creatorChefId,
+      title: thread.title || 'お知らせ',
+      body: thread.body || '',
+      pinned: !!thread.pinned,
+      createdAt: thread.createdAt || new Date().toISOString(),
+    }));
 
     if (!this.state.sampleDataSeeded) {
       if (this.state.purchasedSets.length === 0) {
@@ -846,17 +1559,73 @@ const App = {
       if (this.state.purchasedPublicSetIds.length === 0) {
         this.state.purchasedPublicSetIds = ['chef-003'];
       }
-      if (this.state.accountType === 'user' && this.state.membershipCount === 0) {
-        this.state.membershipCount = 1;
+      if (this.state.membershipSubscriptions.length === 0) {
+        this.state.membershipSubscriptions = [
+          {
+            id: 'sub-001',
+            chefId: 'chef-001',
+            planId: 'plan-001',
+            status: 'active',
+            startedAt: '2026-01-10',
+            currentPeriodEnd: '2026-02-10',
+            price: 500,
+          }
+        ];
+      }
+      if (this.state.followedChefs.length === 0) {
+        this.state.followedChefs = [
+          { chefId: 'chef-001', notifyEnabled: true },
+          { chefId: 'chef-003', notifyEnabled: false },
+        ];
+      }
+      if (this.state.notifications.length === 0) {
+        this.state.notifications = [
+          {
+            id: 'noti-001',
+            category: 'news',
+            title: '田中シェフが新しいセットを公開',
+            message: '平日5日間の時短セットが更新されました。',
+            sourceType: 'chef',
+            sourceName: '田中シェフ',
+            createdAt: '2026-01-24',
+            readAt: null,
+          },
+          {
+            id: 'noti-002',
+            category: 'news',
+            title: '献立ループ事務局からのお知らせ',
+            message: '掲示板機能のテスト公開を開始しました。',
+            sourceType: 'office',
+            sourceName: '献立ループ事務局',
+            createdAt: '2026-01-22',
+            readAt: null,
+          },
+          {
+            id: 'noti-003',
+            category: 'personal',
+            title: 'メンバーシップに加入しました',
+            message: '田中シェフのスタンダードプランに加入しました。',
+            sourceType: 'system',
+            sourceName: '',
+            createdAt: '2026-01-10',
+            readAt: null,
+          },
+        ];
       }
       this.state.sampleDataSeeded = true;
     }
+    this.ensureCreatorChef();
+    this.hydrateCreatorContent();
+    this.syncMembershipCount();
   },
 
   saveState() {
+    this.syncMembershipCount();
     localStorage.setItem('kondate-v2-state', JSON.stringify({
       recipes: this.state.recipes,
       sets: this.state.sets,
+      hiddenSampleSetIds: this.state.hiddenSampleSetIds,
+      sampleSetShareInfo: this.state.sampleSetShareInfo,
       currentSet: this.state.currentSet,
       nextSet: this.state.nextSet,
       setHistory: this.state.setHistory,
@@ -874,6 +1643,15 @@ const App = {
       purchasedRecipeIds: this.state.purchasedRecipeIds,
       purchasedPublicSetIds: this.state.purchasedPublicSetIds,
       membershipCount: this.state.membershipCount,
+      membershipSubscriptions: this.state.membershipSubscriptions,
+      creatorMembershipInfo: this.state.creatorMembershipInfo,
+      creatorMembershipPlans: this.state.creatorMembershipPlans,
+      creatorPublishedRecipes: this.state.creatorPublishedRecipes,
+      creatorPublishedSets: this.state.creatorPublishedSets,
+      creatorBoardThreads: this.state.creatorBoardThreads,
+      followedChefs: this.state.followedChefs,
+      notifications: this.state.notifications,
+      notificationSettings: this.state.notificationSettings,
       sampleDataSeeded: this.state.sampleDataSeeded,
       subscriptionStatus: this.state.subscriptionStatus,
       creatorStatus: this.state.creatorStatus,
@@ -888,14 +1666,18 @@ const App = {
   // 画面遷移
   // ========================================
   goBack(fallback = 'main') {
-    const target = this.state.previousScreen || fallback;
+    const prev = this.state.previousScreen;
+    const target = prev && prev !== this.state.currentScreen ? prev : fallback;
     this.showScreen(target);
   },
 
   showScreen(screenId) {
+    const isSame = this.state.currentScreen === screenId;
     // 前の画面を記録
-    this.state.previousScreen = this.state.currentScreen;
-    this.state.currentScreen = screenId;
+    if (!isSame) {
+      this.state.previousScreen = this.state.currentScreen;
+      this.state.currentScreen = screenId;
+    }
 
     // 全画面を非表示
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -944,6 +1726,21 @@ const App = {
         break;
       case 'purchases':
         this.renderPurchaseHistoryFull();
+        break;
+      case 'payment-history':
+        this.renderPaymentHistory();
+        break;
+      case 'notifications':
+        this.renderNotificationsScreen();
+        break;
+      case 'chef-detail':
+        this.renderChefDetailScreen();
+        break;
+      case 'membership-plans':
+        this.renderMembershipPlansScreen();
+        break;
+      case 'membership-detail':
+        this.renderMembershipDetailScreen();
         break;
     }
   },
@@ -1006,28 +1803,64 @@ const App = {
   renderMyPage() {
     this.renderMyPageProfile();
     this.renderMyPageSummary();
+    this.renderMyPageMemberships();
     this.renderMyPageArchiveSection();
+    this.renderCreatorMembershipSection();
     this.renderCreatorProfileSection();
     this.renderPaymentSection();
     this.renderPurchaseHistory();
+    this.renderNotificationSettings();
     this.renderMyPageDiagnosisSummary();
     this.renderCreatorPanel();
+    this.switchMyPageTab(this.currentMyPageTab || 'profile');
+  },
+
+  switchMyPageTab(tab) {
+    const next = tab === 'settings' ? 'settings' : 'profile';
+    this.currentMyPageTab = next;
+
+    document.querySelectorAll('#mypage-tab-switcher .tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === `mypage-${next}`);
+    });
+
+    const profileTab = document.getElementById('mypage-tab-profile');
+    const settingsTab = document.getElementById('mypage-tab-settings');
+    if (profileTab) profileTab.classList.toggle('hidden', next !== 'profile');
+    if (settingsTab) settingsTab.classList.toggle('hidden', next !== 'settings');
   },
 
   renderMyPageProfile() {
     const avatar = document.getElementById('mypage-avatar');
     const name = document.getElementById('mypage-name');
     const label = document.getElementById('mypage-account-label');
+    const planLabel = document.getElementById('mypage-plan-label');
     const recordNote = document.getElementById('mypage-record-note');
+    const editBtn = document.getElementById('mypage-profile-edit-btn');
 
     if (avatar) avatar.textContent = this.state.profile?.avatar || '🙂';
     if (name) name.textContent = this.state.profile?.name || 'あなた';
     if (label) {
-      let text = this.getAccountTypeLabel(this.state.accountType);
+      let text = `アカウント: ${this.getAccountTypeLabel(this.state.accountType)}`;
       if (this.state.accountType === 'creator' && this.state.creatorStatus === 'pending') {
         text += '（申請中）';
       }
       label.textContent = text;
+    }
+    if (planLabel) {
+      let planText = 'プラン: 無料';
+      if (this.state.accountType === 'creator') {
+        const creatorStatus = this.getCreatorStatusLabel(this.state.creatorStatus);
+        planText = `公開: ${creatorStatus}`;
+      }
+      if (this.state.accountType === 'paid') {
+        const subscription = this.state.subscriptionStatus === 'active' ? 'サブスク中' : '停止中';
+        planText = `サブスク: ${subscription}`;
+      }
+      planLabel.textContent = planText;
+    }
+    if (editBtn) {
+      const isCreator = this.state.accountType === 'creator' || this.state.accountType === 'paid';
+      editBtn.classList.toggle('hidden', !isCreator);
     }
 
     if (recordNote) {
@@ -1074,11 +1907,253 @@ const App = {
 
     if (this.state.accountType === 'user') {
       row.classList.remove('hidden');
-      const count = Number.isFinite(this.state.membershipCount) ? this.state.membershipCount : 0;
+      const subs = Array.isArray(this.state.membershipSubscriptions) ? this.state.membershipSubscriptions : [];
+      const count = subs.filter(sub => sub.status === 'active' || sub.status === 'canceling').length;
       valueEl.textContent = `${count}件`;
     } else {
       row.classList.add('hidden');
     }
+  },
+
+  renderMyPageMemberships() {
+    const section = document.getElementById('mypage-membership-section');
+    const list = document.getElementById('mypage-membership-list');
+    const empty = document.getElementById('mypage-membership-empty');
+    const note = document.getElementById('mypage-membership-note');
+    if (!section || !list || !empty || !note) return;
+
+    if (this.state.accountType !== 'user') {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+
+    const subs = Array.isArray(this.state.membershipSubscriptions) ? this.state.membershipSubscriptions : [];
+    const sorted = [...subs].sort((a, b) => {
+      const aRank = (a.status === 'active' || a.status === 'canceling') ? 0 : 1;
+      const bRank = (b.status === 'active' || b.status === 'canceling') ? 0 : 1;
+      if (aRank !== bRank) return aRank - bRank;
+      const aTime = new Date(a.startedAt || 0).getTime();
+      const bTime = new Date(b.startedAt || 0).getTime();
+      return bTime - aTime;
+    });
+
+    note.textContent = subs.length ? `${subs.length}件` : '未加入';
+
+    if (sorted.length === 0) {
+      list.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+
+    list.innerHTML = sorted.map(sub => {
+      const chef = this.getChefById(sub.chefId);
+      const plan = this.findMembershipPlanById(sub.planId);
+      const statusLabel = sub.status === 'active'
+        ? '有効'
+        : sub.status === 'canceling'
+          ? '解約予定'
+          : '期限切れ';
+      const statusClass = sub.status === 'active'
+        ? 'status-active'
+        : sub.status === 'canceling'
+          ? 'status-canceling'
+          : 'status-expired';
+      const nextDate = sub.currentPeriodEnd ? this.formatMembershipDate(sub.currentPeriodEnd) : '-';
+      const price = plan ? plan.price : sub.price || 0;
+      const actionLabel = (sub.status === 'active' || sub.status === 'canceling') ? 'メンバーシップを見直す' : 'プランを確認';
+      const actionHandler = (sub.status === 'active' || sub.status === 'canceling')
+        ? `App.showMembershipDetail('${sub.chefId}')`
+        : `App.showMembershipPlans('${sub.chefId}')`;
+
+      return `
+        <div class="membership-card">
+          <div class="membership-card-header">
+            <div class="membership-chef">${chef ? chef.name : '料理家'}</div>
+            <span class="membership-status ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="membership-plan-name">${plan ? plan.name : 'メンバーシッププラン'}</div>
+          <div class="membership-meta">
+            <span>${this.formatPrice(price)} / 月</span>
+            <span>次回更新 ${nextDate}</span>
+          </div>
+          <div class="membership-actions">
+            <button class="btn-mini btn-mini-ghost" onclick="${actionHandler}">
+              ${actionLabel}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  renderCreatorMembershipSection() {
+    const section = document.getElementById('mypage-creator-membership');
+    if (!section) return;
+    const isCreator = this.isCreatorAccount();
+    section.classList.toggle('hidden', !isCreator);
+    if (!isCreator) return;
+
+    const info = this.getCreatorMembershipInfo();
+    const plans = this.getCreatorMembershipPlans();
+    const memberRecipes = (this.state.creatorPublishedRecipes || []).filter(item => item.membership);
+    const memberSets = (this.state.creatorPublishedSets || []).filter(item => item.membership);
+    const contentCount = memberRecipes.length + memberSets.length;
+
+    const titleEl = document.getElementById('creator-membership-title');
+    const descEl = document.getElementById('creator-membership-desc');
+    const noteEl = document.getElementById('creator-membership-note');
+    const planCountEl = document.getElementById('creator-plan-count');
+    const contentCountEl = document.getElementById('creator-member-content-count');
+
+    if (titleEl) titleEl.textContent = info.title || 'メンバーシップのタイトルを設定';
+    if (descEl) descEl.textContent = info.summary || '概要を追加できます';
+    if (noteEl) noteEl.textContent = plans.length ? `${plans.length}プラン` : '未設定';
+    if (planCountEl) planCountEl.textContent = plans.length;
+    if (contentCountEl) contentCountEl.textContent = `${contentCount}件`;
+
+    this.renderCreatorPlanList();
+    this.renderCreatorBoardList();
+    this.renderCreatorPublishList();
+  },
+
+  buildPublishAccessBadge(item) {
+    const price = Number(item.price || 0);
+    if (item.membership) {
+      return '<span class="badge badge-member">メンバー限定</span>';
+    }
+    if (price > 0) {
+      return `<span class="badge badge-paid">${this.formatPrice(price)}</span>`;
+    }
+    return '<span class="badge badge-free">フリー</span>';
+  },
+
+  renderCreatorPlanList() {
+    const list = document.getElementById('creator-plan-list');
+    if (!list) return;
+    const plans = this.getCreatorMembershipPlans();
+    if (plans.length === 0) {
+      list.innerHTML = '<p class="empty-text">プランを追加してメンバーシップを始めましょう</p>';
+      return;
+    }
+    list.innerHTML = `
+      <div class="membership-plan-list">
+        ${plans.map(plan => `
+          <div class="membership-plan-card ${plan.recommended ? 'recommended' : ''}">
+            <div class="plan-header">
+              <span class="plan-name">${plan.name}</span>
+              ${plan.recommended ? '<span class="badge badge-recommend">おすすめ</span>' : ''}
+            </div>
+            <div class="plan-price">${this.formatPrice(plan.price)}</div>
+            <p class="plan-desc">${plan.description || ''}</p>
+            <div class="plan-actions">
+              <button class="btn-mini btn-mini-ghost" onclick="App.openCreatorPlanModal('${plan.id}')">編集</button>
+              <button class="btn-mini btn-mini-ghost" onclick="App.deleteCreatorPlan('${plan.id}')">削除</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  },
+
+  renderCreatorBoardList() {
+    const list = document.getElementById('creator-board-list');
+    if (!list) return;
+    const threads = this.getBoardThreadsByChef(this.getCreatorChefId());
+    if (threads.length === 0) {
+      list.innerHTML = '<p class="empty-text">最初の投稿を作ってみましょう</p>';
+      return;
+    }
+    list.innerHTML = threads
+      .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+      .map(thread => `
+        <div class="board-thread creator-board-item">
+          ${thread.pinned ? '<span class="badge badge-pin">固定</span>' : ''}
+          <div class="board-title">${thread.title}</div>
+          <div class="board-thread-body">${thread.body}</div>
+          <div class="creator-board-actions">
+            <button class="btn-mini btn-mini-ghost" onclick="App.openCreatorBoardModal('${thread.id}')">編集</button>
+            <button class="btn-mini btn-mini-ghost" onclick="App.toggleCreatorBoardPin('${thread.id}')">
+              ${thread.pinned ? '固定解除' : '固定する'}
+            </button>
+            <button class="btn-mini btn-mini-ghost" onclick="App.deleteCreatorBoardThread('${thread.id}')">削除</button>
+          </div>
+        </div>
+      `).join('');
+  },
+
+  renderCreatorPublishList() {
+    const list = document.getElementById('creator-publish-list');
+    if (!list) return;
+    const recipes = this.state.creatorPublishedRecipes || [];
+    const sets = this.state.creatorPublishedSets || [];
+    if (recipes.length === 0 && sets.length === 0) {
+      list.innerHTML = '<p class="empty-text">公開中のコンテンツはありません</p>';
+      return;
+    }
+
+    const recipeHtml = recipes.length
+      ? recipes.map(item => `
+          <div class="creator-publish-item">
+            <div class="creator-publish-info">
+              <div class="creator-publish-name">${item.name}</div>
+              <div class="creator-publish-meta">${this.buildPublishAccessBadge(item)}</div>
+            </div>
+            <button class="btn-mini btn-mini-ghost" onclick="App.openCreatorPublishModal('recipe', '${item.sourceRecipeId}')">
+              編集
+            </button>
+          </div>
+        `).join('')
+      : '<p class="empty-text">レシピはまだ公開していません</p>';
+
+    const setHtml = sets.length
+      ? sets.map(item => `
+          <div class="creator-publish-item">
+            <div class="creator-publish-info">
+              <div class="creator-publish-name">${item.name}</div>
+              <div class="creator-publish-meta">${this.buildPublishAccessBadge(item)}</div>
+            </div>
+            <button class="btn-mini btn-mini-ghost" onclick="App.openCreatorPublishModal('set', '${item.sourceSetId}')">
+              編集
+            </button>
+          </div>
+        `).join('')
+      : '<p class="empty-text">セットはまだ公開していません</p>';
+
+    list.innerHTML = `
+      <div class="creator-publish-group">
+        <div class="creator-publish-label">レシピ</div>
+        ${recipeHtml}
+      </div>
+      <div class="creator-publish-group">
+        <div class="creator-publish-label">セット</div>
+        ${setHtml}
+      </div>
+    `;
+  },
+
+  renderNotificationSettings() {
+    const toggle = document.getElementById('mypage-push-toggle');
+    const countEl = document.getElementById('mypage-followed-count');
+    if (toggle) {
+      const enabled = !!this.state.notificationSettings?.pushEnabled;
+      toggle.classList.toggle('on', enabled);
+      toggle.textContent = enabled ? 'ON' : 'OFF';
+    }
+    if (countEl) {
+      const count = (this.state.followedChefs || []).length;
+      countEl.textContent = `${count}人`;
+    }
+  },
+
+  togglePushNotifications() {
+    if (!this.state.notificationSettings) {
+      this.state.notificationSettings = { pushEnabled: true };
+    }
+    this.state.notificationSettings.pushEnabled = !this.state.notificationSettings.pushEnabled;
+    this.saveState();
+    this.renderNotificationSettings();
   },
 
   getLatestCookingLogDate() {
@@ -1339,7 +2414,7 @@ const App = {
 
   getAccountTypeLabel(type) {
     if (type === 'creator') return 'クリエイター';
-    if (type === 'paid') return '有料クリエイター';
+    if (type === 'paid') return 'クリエイター+';
     return 'ユーザー';
   },
 
@@ -1428,6 +2503,9 @@ const App = {
         this.state.creatorStatus = 'approved';
       }
     }
+    if (type === 'creator' || type === 'paid') {
+      this.ensureCreatorChef();
+    }
     this.saveState();
     this.renderMyPage();
     this.showToast('使い方を変更しました');
@@ -1458,7 +2536,9 @@ const App = {
     };
     this.state.creatorStatus = 'pending';
     this.state.accountType = 'creator';
+    this.ensureCreatorChef();
     this.saveState();
+    this.renderCreatorNameOptions();
     this.renderMyPage();
     this.closeModal();
     this.showToast('公開の申請を送信しました');
@@ -1489,11 +2569,370 @@ const App = {
       isPublic: visibility === 'public',
     };
     this.state.profile = { ...this.state.profile, name: displayName };
+    this.ensureCreatorChef();
     this.saveState();
+    this.renderCreatorNameOptions();
     this.renderMyPageProfile();
     this.renderCreatorProfileSection();
     this.closeModal();
     this.showToast('公開プロフィールを保存しました');
+  },
+
+  showUserProfile() {
+    const modal = document.getElementById('modal-user-profile');
+    if (!modal) return;
+    const avatar = document.getElementById('user-profile-avatar');
+    const name = document.getElementById('user-profile-name');
+    const type = document.getElementById('user-profile-type');
+    const note = document.getElementById('user-profile-note');
+    const displayName = this.state.profile?.name || 'あなた';
+    if (avatar) avatar.textContent = this.state.profile?.avatar || '🙂';
+    if (name) name.textContent = displayName;
+    if (type) type.textContent = this.getAccountTypeLabel(this.state.accountType);
+    if (note) {
+      note.textContent = 'マイページからプロフィールを編集できます。';
+    }
+    modal.classList.remove('hidden');
+  },
+
+  openMyProfileEditor() {
+    if (this.isCreatorAccount()) {
+      this.showCreatorProfileModal();
+      return;
+    }
+    this.showUserProfile();
+  },
+
+  showCreatorMembershipModal() {
+    const modal = document.getElementById('modal-creator-membership');
+    if (!modal) return;
+    const info = this.getCreatorMembershipInfo();
+    document.getElementById('creator-membership-title-input').value = info.title || '';
+    document.getElementById('creator-membership-summary-input').value = info.summary || '';
+    document.getElementById('creator-membership-welcome-input').value = info.welcome || '';
+    modal.classList.remove('hidden');
+  },
+
+  saveCreatorMembershipInfo() {
+    const title = document.getElementById('creator-membership-title-input').value.trim();
+    const summary = document.getElementById('creator-membership-summary-input').value.trim();
+    const welcome = document.getElementById('creator-membership-welcome-input').value.trim();
+    this.state.creatorMembershipInfo = { title, summary, welcome };
+    this.ensureCreatorChef();
+    this.saveState();
+    this.renderCreatorMembershipSection();
+    this.closeModal();
+    this.showToast('メンバーシップ情報を更新しました');
+  },
+
+  openCreatorPlanModal(planId = '') {
+    const modal = document.getElementById('modal-creator-plan');
+    if (!modal) return;
+    const plan = planId ? this.findMembershipPlanById(planId) : null;
+    this.pendingCreatorPlanId = plan ? plan.id : '';
+    document.getElementById('creator-plan-name').value = plan ? plan.name : '';
+    document.getElementById('creator-plan-price').value = plan ? plan.price : 500;
+    document.getElementById('creator-plan-desc').value = plan ? plan.description : '';
+    document.getElementById('creator-plan-recommended').checked = plan ? !!plan.recommended : false;
+    modal.classList.remove('hidden');
+  },
+
+  saveCreatorPlan() {
+    const name = document.getElementById('creator-plan-name').value.trim();
+    const price = parseFloat(document.getElementById('creator-plan-price').value) || 0;
+    const description = document.getElementById('creator-plan-desc').value.trim();
+    const recommended = document.getElementById('creator-plan-recommended').checked;
+    if (!name) {
+      this.showToast('プラン名を入力してください');
+      return;
+    }
+    const chefId = this.getCreatorChefId();
+    const planId = this.pendingCreatorPlanId;
+    if (planId) {
+      this.state.creatorMembershipPlans = (this.state.creatorMembershipPlans || []).map(plan =>
+        plan.id === planId
+          ? { ...plan, name, price, description, recommended, chefId }
+          : plan
+      );
+    } else {
+      this.state.creatorMembershipPlans.push({
+        id: `plan-self-${Date.now()}`,
+        chefId,
+        name,
+        price,
+        description,
+        recommended,
+      });
+    }
+    this.saveState();
+    this.renderCreatorMembershipSection();
+    this.renderCreatorPanel();
+    this.closeModal();
+    this.showToast('プランを保存しました');
+  },
+
+  deleteCreatorPlan(planId) {
+    if (!planId) return;
+    if (!confirm('このプランを削除しますか？')) return;
+    this.state.creatorMembershipPlans = (this.state.creatorMembershipPlans || []).filter(plan => plan.id !== planId);
+    this.saveState();
+    this.renderCreatorMembershipSection();
+    this.renderCreatorPanel();
+    this.showToast('プランを削除しました');
+  },
+
+  openCreatorPublishModal(type, sourceId) {
+    if (!this.isCreatorAccount()) return;
+    const modal = document.getElementById('modal-creator-publish');
+    if (!modal) return;
+    const isRecipe = type === 'recipe';
+    const source = isRecipe
+      ? this.state.recipes.find(item => item.id === sourceId)
+      : this.state.sets.find(item => item.id === sourceId);
+    if (!source) {
+      this.showToast('公開対象が見つかりませんでした');
+      return;
+    }
+    this.pendingPublishTarget = { type, sourceId };
+    const published = isRecipe
+      ? this.getCreatorPublishedRecipeBySource(sourceId)
+      : this.getCreatorPublishedSetBySource(sourceId);
+    const canPublish = isRecipe ? this.canPublishRecipe(source) : this.canPublishSet(source);
+    if (!published && !canPublish) {
+      const message = isRecipe
+        ? '引き込んだレシピは公開できません'
+        : '引き込んだレシピセットは公開できません';
+      this.showToast(message);
+      return;
+    }
+    const accessType = published
+      ? (published.membership ? 'membership' : (Number(published.price || 0) > 0 ? 'paid' : 'free'))
+      : 'free';
+    const price = published ? Number(published.price || 0) : 0;
+    const tagValue = (published?.tags || source.tags || []).join(', ');
+    document.getElementById('creator-publish-target').textContent = source.name;
+    document.getElementById('creator-publish-access').value = accessType;
+    document.getElementById('creator-publish-price').value = price || '';
+    document.getElementById('creator-publish-tags').value = tagValue;
+    const removeBtn = document.getElementById('creator-publish-remove');
+    if (removeBtn) removeBtn.classList.toggle('hidden', !published);
+    this.updatePublishAccessUI();
+    modal.classList.remove('hidden');
+  },
+
+  updatePublishAccessUI() {
+    const type = document.getElementById('creator-publish-access')?.value || 'free';
+    const priceInput = document.getElementById('creator-publish-price');
+    if (!priceInput) return;
+    if (type === 'paid') {
+      priceInput.disabled = false;
+      if (!priceInput.value) priceInput.value = '500';
+    } else {
+      priceInput.disabled = true;
+      priceInput.value = '';
+    }
+  },
+
+  parseTagInput(value) {
+    if (!value) return [];
+    return value
+      .split(/[、,]/)
+      .map(tag => tag.trim())
+      .filter(Boolean);
+  },
+
+  saveCreatorPublish() {
+    const target = this.pendingPublishTarget;
+    if (!target) return;
+    const accessType = document.getElementById('creator-publish-access')?.value || 'free';
+    const price = accessType === 'paid'
+      ? (parseFloat(document.getElementById('creator-publish-price').value) || 0)
+      : 0;
+    const tags = this.parseTagInput(document.getElementById('creator-publish-tags')?.value || '');
+
+    if (target.type === 'recipe') {
+      this.upsertCreatorPublishedRecipe(target.sourceId, accessType, price, tags);
+    } else {
+      this.upsertCreatorPublishedSet(target.sourceId, accessType, price, tags);
+    }
+    this.saveState();
+    this.renderCreatorMembershipSection();
+    this.renderCreatorPanel();
+    this.renderRecipesScreen();
+    this.renderPublicScreen();
+    this.closeModal();
+    this.showToast('公開内容を更新しました');
+  },
+
+  unpublishCreatorContent() {
+    const target = this.pendingPublishTarget;
+    if (!target) return;
+    if (!confirm('公開を停止しますか？')) return;
+    if (target.type === 'recipe') {
+      this.removeCreatorPublishedRecipeBySource(target.sourceId);
+    } else {
+      this.removeCreatorPublishedSetBySource(target.sourceId);
+    }
+    this.saveState();
+    this.renderCreatorMembershipSection();
+    this.renderCreatorPanel();
+    this.renderRecipesScreen();
+    this.renderPublicScreen();
+    this.closeModal();
+    this.showToast('公開を停止しました');
+  },
+
+  upsertCreatorPublishedRecipe(sourceRecipeId, accessType, price, tags = null) {
+    const source = this.state.recipes.find(recipe => recipe.id === sourceRecipeId);
+    if (!source) return null;
+    const chefId = this.getCreatorChefId();
+    const existing = this.getCreatorPublishedRecipeBySource(sourceRecipeId);
+    const isMembership = accessType === 'membership';
+    const payload = {
+      ...source,
+      id: existing ? existing.id : `pub-self-${Date.now()}`,
+      chefId,
+      price: accessType === 'paid' ? price : 0,
+      membership: isMembership,
+      sourceRecipeId,
+      publishedAt: existing?.publishedAt || new Date().toISOString(),
+      tags: Array.isArray(tags) && tags.length ? tags : (source.tags || []),
+    };
+    if (existing) {
+      this.state.creatorPublishedRecipes = this.state.creatorPublishedRecipes.map(recipe =>
+        recipe.id === existing.id ? payload : recipe
+      );
+      this.publicRecipes = this.publicRecipes.map(recipe =>
+        recipe.id === existing.id ? payload : recipe
+      );
+    } else {
+      this.state.creatorPublishedRecipes.push(payload);
+      this.publicRecipes.push(payload);
+    }
+    return payload;
+  },
+
+  upsertCreatorPublishedSet(sourceSetId, accessType, price, tags = null) {
+    const source = this.state.sets.find(set => set.id === sourceSetId);
+    if (!source) return null;
+    const chefId = this.getCreatorChefId();
+    const existing = this.getCreatorPublishedSetBySource(sourceSetId);
+    const publishedRecipeIds = (source.recipeIds || []).map(recipeId => {
+      const published = this.getCreatorPublishedRecipeBySource(recipeId);
+      if (published) return published.id;
+      const created = this.upsertCreatorPublishedRecipe(recipeId, accessType, price, tags);
+      return created ? created.id : recipeId;
+    });
+
+    const payload = {
+      ...source,
+      id: existing ? existing.id : `pubset-self-${Date.now()}`,
+      chefId,
+      author: this.state.creatorProfile?.displayName || this.state.profile?.name || '料理家',
+      recipeIds: publishedRecipeIds,
+      price: accessType === 'paid' ? price : 0,
+      membership: accessType === 'membership',
+      sourceSetId,
+      publishedAt: existing?.publishedAt || new Date().toISOString(),
+      tags: Array.isArray(tags) && tags.length ? tags : (source.tags || []),
+    };
+    if (existing) {
+      this.state.creatorPublishedSets = this.state.creatorPublishedSets.map(set =>
+        set.id === existing.id ? payload : set
+      );
+      this.publicSets = this.publicSets.map(set =>
+        set.id === existing.id ? payload : set
+      );
+    } else {
+      this.state.creatorPublishedSets.push(payload);
+      this.publicSets.push(payload);
+    }
+    return payload;
+  },
+
+  removeCreatorPublishedRecipeBySource(sourceRecipeId) {
+    const existing = this.getCreatorPublishedRecipeBySource(sourceRecipeId);
+    if (!existing) return;
+    this.state.creatorPublishedRecipes = this.state.creatorPublishedRecipes.filter(recipe => recipe.id !== existing.id);
+    this.publicRecipes = this.publicRecipes.filter(recipe => recipe.id !== existing.id);
+  },
+
+  removeCreatorPublishedSetBySource(sourceSetId) {
+    const existing = this.getCreatorPublishedSetBySource(sourceSetId);
+    if (!existing) return;
+    this.state.creatorPublishedSets = this.state.creatorPublishedSets.filter(set => set.id !== existing.id);
+    this.publicSets = this.publicSets.filter(set => set.id !== existing.id);
+  },
+
+  openCreatorBoardModal(threadId = '') {
+    const modal = document.getElementById('modal-creator-board');
+    if (!modal) return;
+    const thread = threadId ? this.findBoardThreadById(threadId) : null;
+    this.pendingBoardThreadId = thread ? thread.id : '';
+    document.getElementById('creator-board-title').value = thread ? thread.title : '';
+    document.getElementById('creator-board-body').value = thread ? thread.body : '';
+    document.getElementById('creator-board-pin').checked = thread ? !!thread.pinned : false;
+    modal.classList.remove('hidden');
+  },
+
+  saveCreatorBoardThread() {
+    const title = document.getElementById('creator-board-title').value.trim();
+    const body = document.getElementById('creator-board-body').value.trim();
+    const pinned = document.getElementById('creator-board-pin').checked;
+    if (!title) {
+      this.showToast('タイトルを入力してください');
+      return;
+    }
+    const chefId = this.getCreatorChefId();
+    const threadId = this.pendingBoardThreadId;
+    if (pinned) {
+      this.state.creatorBoardThreads = (this.state.creatorBoardThreads || []).map(thread => ({
+        ...thread,
+        pinned: false,
+      }));
+    }
+    if (threadId) {
+      this.state.creatorBoardThreads = (this.state.creatorBoardThreads || []).map(thread =>
+        thread.id === threadId
+          ? { ...thread, title, body, pinned, chefId }
+          : thread
+      );
+    } else {
+      this.state.creatorBoardThreads.push({
+        id: `thread-self-${Date.now()}`,
+        chefId,
+        title,
+        body,
+        pinned,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    this.saveState();
+    this.renderCreatorMembershipSection();
+    this.closeModal();
+    this.showToast('掲示板を更新しました');
+  },
+
+  toggleCreatorBoardPin(threadId) {
+    const threads = this.state.creatorBoardThreads || [];
+    const target = threads.find(thread => thread.id === threadId);
+    if (!target) return;
+    const nextPinned = !target.pinned;
+    this.state.creatorBoardThreads = threads.map(thread => ({
+      ...thread,
+      pinned: thread.id === threadId ? nextPinned : false,
+    }));
+    this.saveState();
+    this.renderCreatorMembershipSection();
+  },
+
+  deleteCreatorBoardThread(threadId) {
+    if (!threadId) return;
+    if (!confirm('この投稿を削除しますか？')) return;
+    this.state.creatorBoardThreads = (this.state.creatorBoardThreads || []).filter(thread => thread.id !== threadId);
+    this.saveState();
+    this.renderCreatorMembershipSection();
+    this.showToast('投稿を削除しました');
   },
 
   renderPaymentSection() {
@@ -1613,6 +3052,91 @@ const App = {
         <div class="mypage-list-item">
           <div class="mypage-list-title">${name || '購入したセット'}</div>
           <div class="mypage-list-meta">${purchasedAt}</div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  renderPaymentHistory() {
+    const list = document.getElementById('payment-history-list');
+    const empty = document.getElementById('payment-history-empty');
+    if (!list || !empty) return;
+
+    const items = [];
+    const purchases = Array.isArray(this.state.purchasedSets) ? this.state.purchasedSets : [];
+    purchases.forEach(item => {
+      const name = typeof item === 'string' ? item : item.name;
+      const purchasedAt = typeof item === 'string' ? '' : (item.purchasedAt || '');
+      items.push({
+        type: 'purchase',
+        title: name || '購入したセット',
+        date: purchasedAt,
+        amount: '',
+        meta: '購入',
+      });
+    });
+
+    const purchasedRecipeIds = Array.isArray(this.state.purchasedRecipeIds)
+      ? this.state.purchasedRecipeIds
+      : [];
+    purchasedRecipeIds.forEach(recipeId => {
+      const recipe = this.publicRecipes.find(item => item.id === recipeId);
+      if (!recipe) return;
+      const priceText = Number(recipe.price || 0) > 0 ? this.formatPrice(recipe.price) : '';
+      items.push({
+        type: 'purchase',
+        title: recipe.name || '購入したレシピ',
+        date: '',
+        amount: priceText,
+        meta: '購入',
+      });
+    });
+
+    const subs = Array.isArray(this.state.membershipSubscriptions) ? this.state.membershipSubscriptions : [];
+    subs.forEach(sub => {
+      const chef = this.getChefById(sub.chefId);
+      const plan = this.findMembershipPlanById(sub.planId);
+      const chefName = chef?.name || '料理家';
+      const planName = plan?.name || 'メンバーシップ';
+      const date = sub.startedAt || '';
+      const priceText = typeof sub.price === 'number' ? this.formatPrice(sub.price) : '';
+      items.push({
+        type: 'subscription',
+        title: `${chefName} ${planName}`,
+        date,
+        amount: priceText,
+        meta: 'サブスク',
+      });
+    });
+
+    const parseDate = value => {
+      if (!value) return null;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    items.sort((a, b) => {
+      const dateA = parseDate(a.date);
+      const dateB = parseDate(b.date);
+      if (dateA && dateB) return dateB - dateA;
+      if (dateA) return -1;
+      if (dateB) return 1;
+      return 0;
+    });
+
+    if (items.length === 0) {
+      list.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    empty.classList.add('hidden');
+    list.innerHTML = items.map(item => {
+      const parts = [item.meta, item.date, item.amount].filter(Boolean);
+      return `
+        <div class="mypage-list-item">
+          <div class="mypage-list-title">${item.title}</div>
+          <div class="mypage-list-meta">${parts.join(' / ')}</div>
         </div>
       `;
     }).join('');
@@ -1877,7 +3401,7 @@ const App = {
 
     if (this.state.accountType === 'creator' || this.state.accountType === 'paid') {
       panel.classList.remove('hidden');
-      const publicCount = this.state.sets.length;
+      const publicCount = (this.state.creatorPublishedSets || []).length;
       const countEl = document.getElementById('creator-public-sets');
       const salesEl = document.getElementById('creator-sales-count');
       const amountEl = document.getElementById('creator-sales-amount');
@@ -1886,8 +3410,8 @@ const App = {
       if (salesEl) salesEl.textContent = '0';
       if (amountEl) amountEl.textContent = '¥0';
       if (membershipEl) {
-        const isActive = this.state.accountType === 'paid' && this.state.subscriptionStatus === 'active';
-        membershipEl.textContent = isActive ? '稼働中' : '未設定';
+        const planCount = this.getCreatorMembershipPlans().length;
+        membershipEl.textContent = planCount ? `${planCount}プラン` : '未設定';
       }
     } else {
       panel.classList.add('hidden');
@@ -2271,7 +3795,11 @@ const App = {
     this.renderFridgeRecommendations('fridge-recommend-select', { context: 'select' });
 
     // サンプルセット + ユーザーセット
-    const mySets = [...this.sampleSets, ...this.state.sets];
+    const hiddenSampleSetIds = new Set(this.state.hiddenSampleSetIds || []);
+    const mySets = [
+      ...this.sampleSets.filter(set => !hiddenSampleSetIds.has(set.id)),
+      ...this.state.sets,
+    ];
 
     if (myList) {
       if (mySets.length === 0) {
@@ -2462,6 +3990,10 @@ const App = {
   // ========================================
   resetSetCreateForm() {
     document.getElementById('set-name-input').value = '';
+    const authorInput = document.getElementById('set-author-input');
+    if (authorInput) authorInput.value = '';
+    const descriptionInput = document.getElementById('set-description-input');
+    if (descriptionInput) descriptionInput.value = '';
     this.state.selectedRecipesForSet = [];
     this.renderSelectedRecipes();
     this.updateSaveSetButton();
@@ -2500,6 +4032,31 @@ const App = {
     btn.disabled = !name || count < 1 || count > 7;
   },
 
+  startSetCreateFromRecipe(recipeId) {
+    const recipe = this.getRecipeById(recipeId);
+    if (!recipe) {
+      this.showToast('レシピが見つかりませんでした');
+      return;
+    }
+
+    this.state.editingSetId = null;
+    this.closeModal();
+    this.showScreen('set-create');
+
+    this.state.selectedRecipesForSet = [recipe];
+    const nameInput = document.getElementById('set-name-input');
+    if (nameInput) {
+      nameInput.value = `${recipe.name}セット`;
+    }
+    const authorInput = document.getElementById('set-author-input');
+    if (authorInput) authorInput.value = '';
+    const descriptionInput = document.getElementById('set-description-input');
+    if (descriptionInput) descriptionInput.value = '';
+
+    this.renderSelectedRecipes();
+    this.updateSaveSetButton();
+  },
+
   // ========================================
   // セットテンプレート選択（既存のセットから編集）
   // ========================================
@@ -2527,6 +4084,14 @@ const App = {
     const nameInput = document.getElementById('set-name-input');
     if (nameInput) {
       nameInput.value = `${set.name}${suffix}`;
+    }
+    const authorInput = document.getElementById('set-author-input');
+    if (authorInput) {
+      authorInput.value = options.author ?? '';
+    }
+    const descriptionInput = document.getElementById('set-description-input');
+    if (descriptionInput) {
+      descriptionInput.value = options.description ?? set.description ?? '';
     }
 
     this.state.selectedRecipesForSet = [];
@@ -2556,9 +4121,10 @@ const App = {
     const list = document.getElementById('set-template-list');
 
     // 自分のセット + スターターセット + 公開セットを一覧表示
+    const hiddenSampleSetIds = new Set(this.state.hiddenSampleSetIds || []);
     const allSets = [
       ...this.state.sets.map(s => ({ ...s, source: 'user' })),
-      ...this.sampleSets.map(s => ({ ...s, source: 'starter' })),
+      ...this.sampleSets.filter(set => !hiddenSampleSetIds.has(set.id)).map(s => ({ ...s, source: 'starter' })),
       ...this.publicSets.map(s => ({ ...s, source: 'public' })),
     ];
 
@@ -2722,6 +4288,8 @@ const App = {
 
   saveNewSet() {
     const name = document.getElementById('set-name-input').value.trim();
+    const authorName = document.getElementById('set-author-input')?.value.trim() || '';
+    const description = document.getElementById('set-description-input')?.value.trim() || '';
     if (!name || this.state.selectedRecipesForSet.length < 1) return;
 
     const recipeIds = this.state.selectedRecipesForSet.map(r =>
@@ -2734,6 +4302,8 @@ const App = {
       if (existingSet) {
         existingSet.name = name;
         existingSet.recipeIds = recipeIds;
+        existingSet.originalAuthor = authorName;
+        existingSet.description = description;
         this.saveState();
         this.state.editingSetId = null;
         this.showToast('セットを更新しました');
@@ -2747,6 +4317,8 @@ const App = {
       id: 'user-' + Date.now(),
       name: name,
       recipeIds: recipeIds,
+      originalAuthor: authorName,
+      description,
     };
 
     this.state.sets.push(newSet);
@@ -2768,6 +4340,8 @@ const App = {
     }
 
     document.getElementById('recipe-name-input').value = '';
+    const authorInput = document.getElementById('recipe-author-input');
+    if (authorInput) authorInput.value = '';
     document.getElementById('recipe-url-input').value = '';
     document.getElementById('ingredients-list').innerHTML = '';
     document.getElementById('steps-list').innerHTML = '';
@@ -3107,6 +4681,7 @@ const App = {
       this.showToast('料理名を入力してください');
       return;
     }
+    const authorName = document.getElementById('recipe-author-input')?.value.trim() || '';
 
     // 人数
     const servingsBtn = document.querySelector('.serving-btn.active');
@@ -3187,6 +4762,7 @@ const App = {
       intermediates,
       steps,
       url: url || null,
+      originalAuthor: authorName,
     };
 
     this.state.recipes.push(newRecipe);
@@ -3295,16 +4871,27 @@ const App = {
     }
 
     empty.classList.add('hidden');
-    list.innerHTML = recipes.map(recipe => `
+    const isCreator = this.isCreatorAccount();
+    list.innerHTML = recipes.map(recipe => {
+      const creatorInfo = this.getRecipeCreatorInfo(recipe);
+      const creatorChip = this.buildCreatorChip(creatorInfo);
+      const publishInfo = (isCreator && recipe.id.startsWith('recipe-'))
+        ? this.getCreatorPublishedRecipeBySource(recipe.id)
+        : null;
+      const publishBadge = publishInfo ? this.buildPublishAccessBadge(publishInfo) : '';
+      return `
       <div class="recipe-list-item" onclick="App.showRecipeDetail('${recipe.id}')">
         <span class="recipe-list-emoji">${recipe.emoji || '🍽️'}</span>
         <div class="recipe-list-info">
           <div class="recipe-list-name">${recipe.name}</div>
           <div class="recipe-list-meta">${(recipe.tags || []).join(' ')}</div>
+          ${creatorChip}
+          ${publishBadge ? `<div class="recipe-list-badges">${publishBadge}</div>` : ''}
         </div>
         <span class="recipe-list-action material-icons-round">chevron_right</span>
       </div>
-    `).join('');
+    `;
+    }).join('');
   },
 
   renderMySets() {
@@ -3312,7 +4899,12 @@ const App = {
     const empty = document.getElementById('my-sets-empty');
 
     // スターターセット + ユーザーセット
-    const allSets = [...this.sampleSets, ...this.state.sets];
+    const hiddenSampleSetIds = new Set(this.state.hiddenSampleSetIds || []);
+    const allSets = [
+      ...this.sampleSets.filter(set => !hiddenSampleSetIds.has(set.id)),
+      ...this.state.sets,
+    ];
+    const isCreator = this.isCreatorAccount();
 
     if (allSets.length === 0) {
       list.innerHTML = '';
@@ -3325,13 +4917,23 @@ const App = {
       const recipes = this.getRecipesFromSet(set);
       const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
       const isStarter = set.id.startsWith('starter-');
+      const sourceLabel = this.getSetSourceLabel(set);
+      const publishInfo = (!isStarter && isCreator)
+        ? this.getCreatorPublishedSetBySource(set.id)
+        : null;
+      const metaParts = [
+        `<span class="set-card-source"><span class="material-icons-round">person</span>${sourceLabel}</span>`,
+      ];
+      if (publishInfo) {
+        metaParts.push(this.buildPublishAccessBadge(publishInfo));
+      }
       return `
         <div class="set-card" onclick="App.showSetDetail('${set.id}')">
           <div class="set-card-header">
             <span class="set-card-name">${set.name}</span>
             <span class="set-card-count">${recipes.length}品</span>
           </div>
-          ${isStarter ? '<div class="set-card-meta"><span class="starter-badge">スターター</span></div>' : ''}
+          <div class="set-card-meta">${metaParts.join('')}</div>
           <div class="set-card-preview">
             <span class="set-card-preview-item">${previewNames}${recipes.length > 3 ? '...' : ''}</span>
           </div>
@@ -3342,27 +4944,118 @@ const App = {
 
   showSetDetail(setId) {
     // サンプルセット、ユーザーセット、公開セットから探す
-    let set = this.sampleSets.find(s => s.id === setId);
-    let isUserSet = false;
-    let isSampleSet = !!set;
-
-    if (!set) {
-      set = this.state.sets.find(s => s.id === setId);
-      isUserSet = !!set;
-    }
-    if (!set) {
-      set = this.publicSets.find(s => s.id === setId);
-    }
+    const sampleSet = this.sampleSets.find(s => String(s.id) === String(setId));
+    const userSet = this.state.sets.find(s => String(s.id) === String(setId));
+    const publicSet = this.publicSets.find(s => String(s.id) === String(setId));
+    const set = userSet || sampleSet || publicSet;
     if (!set) return;
 
+    const isUserSet = !!userSet;
+    const isSampleSet = !!sampleSet;
+    if (isSampleSet) {
+      const shareInfo = this.state.sampleSetShareInfo?.[set.id];
+      if (shareInfo) {
+        set.shareInfo = { ...shareInfo };
+      }
+    }
+
     const recipes = this.getRecipesFromSet(set);
+    const isCreator = this.isCreatorAccount();
+    const publishInfo = (isCreator && isUserSet)
+      ? this.getCreatorPublishedSetBySource(set.id)
+      : null;
+    const canPublish = isCreator && isUserSet && this.canPublishSet(set);
+    const canShare = (isUserSet || isSampleSet) && this.canShareSet(set);
+    const publishBadge = publishInfo ? this.buildPublishAccessBadge(publishInfo) : '';
+    const publishLabel = publishInfo ? '公開内容を編集' : 'レシピカタログに公開';
+    const chefId = this.getSetChefId(set);
+    const sourceLabel = this.getSetSourceLabel(set);
+    const description = set.description || '';
+    const tagList = Array.isArray(set.tags) ? set.tags : [];
+    const authorHtml = chefId
+      ? `
+        <button class="detail-chef-link" onclick="App.showChefDetail('${chefId}')">
+          <span class="material-icons-round">person</span>
+          ${sourceLabel}
+        </button>
+      `
+      : `
+        <span class="detail-chef-label">
+          <span class="material-icons-round">person</span>
+          ${sourceLabel}
+        </span>
+      `;
+    const descriptionHtml = `
+      <p class="set-detail-desc ${description ? '' : 'is-empty'}">
+        ${description || '概要はまだありません'}
+      </p>
+    `;
+    const tagsHtml = tagList.length
+      ? `<div class="card-tags set-detail-tags">${tagList.map(tag => `<span class="card-tag">${tag}</span>`).join('')}</div>`
+      : '';
+    const manageButtons = [];
+    const actionNotes = [];
+    if (isUserSet) {
+      manageButtons.push(`
+        <button class="btn-secondary" onclick="App.editSet('${setId}')">
+          <span class="material-icons-round">edit</span>
+          編集する
+        </button>
+      `);
+      if (isCreator) {
+        if (canPublish || publishInfo) {
+          manageButtons.push(`
+            <button class="btn-secondary" onclick="App.openCreatorPublishModal('set', '${set.id}')">
+              ${publishLabel}
+            </button>
+          `);
+        } else {
+          actionNotes.push('引き込んだレシピセットは公開できません');
+        }
+      }
+      if (canShare) {
+        manageButtons.push(`
+          <button class="btn-secondary" onclick="App.openShareModal('set', '${set.id}')">
+            <span class="material-icons-round">share</span>
+            外部共有
+          </button>
+        `);
+      } else {
+        actionNotes.push('引き込んだレシピセットは外部共有できません');
+      }
+      manageButtons.push(`
+        <button class="btn-secondary danger" onclick="App.deleteSet('${setId}')">
+          レシピ帳から削除
+        </button>
+      `);
+    } else if (isSampleSet) {
+      if (canShare) {
+        manageButtons.push(`
+          <button class="btn-secondary" onclick="App.openShareModal('set', '${set.id}')">
+            <span class="material-icons-round">share</span>
+            外部共有
+          </button>
+        `);
+      }
+      manageButtons.push(`
+        <button class="btn-secondary danger" onclick="App.deleteSet('${setId}')">
+          レシピ帳から削除
+        </button>
+      `);
+    }
+
     const modal = document.getElementById('modal-set-detail');
     document.getElementById('detail-set-name').textContent = set.name;
 
     const body = document.getElementById('detail-set-body');
     body.innerHTML = `
-      <div style="margin-bottom: 16px;">
-        <p style="color: var(--text-sub); font-size: 14px;">${recipes.length}品のレシピ</p>
+      <div class="set-detail-info">
+        <div class="detail-chef-row">
+          ${authorHtml}
+        </div>
+        ${descriptionHtml}
+        ${tagsHtml}
+        <p class="set-detail-count">${recipes.length}品のレシピ</p>
       </div>
       <div class="set-detail-cards-wrapper">
         <div class="set-detail-cards-scroll">
@@ -3379,24 +5072,26 @@ const App = {
         </div>
         <div class="scroll-hint"></div>
       </div>
-      <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px;">
+      <div class="set-detail-actions">
         <button class="btn-primary" style="width: 100%;" onclick="App.closeModal(); App.selectSet('${setId}');">
           <span class="material-icons-round">calendar_today</span>
           献立表に登録する
         </button>
-        ${isUserSet ? `
-          <button class="btn-secondary" style="width: 100%;" onclick="App.editSet('${setId}')">
-            <span class="material-icons-round">edit</span>
-            編集する
-          </button>
-          <button class="btn-text" style="color: red;" onclick="App.deleteSet('${setId}')">
-            このセットを削除
-          </button>
+        ${isUserSet || isSampleSet ? `
+          ${publishBadge ? `<div class="detail-badges">${publishBadge}</div>` : ''}
+          ${manageButtons.length ? `
+            <div class="set-detail-action-grid">
+              ${manageButtons.join('')}
+            </div>
+          ` : ''}
+          ${actionNotes.length ? `
+            <p class="set-detail-action-note">${actionNotes.join('<br>')}</p>
+          ` : ''}
         ` : ''}
         ${!isUserSet && !isSampleSet ? `
           <button class="btn-secondary" style="width: 100%;" onclick="App.copySetToMy('${setId}')">
             <span class="material-icons-round">content_copy</span>
-            わたしのセットに追加
+            レシピ帳に保存
           </button>
         ` : ''}
       </div>
@@ -3417,6 +5112,8 @@ const App = {
       id: `set-${Date.now()}`,
       name: set.name + '（コピー）',
       recipeIds: [...set.recipeIds],
+      originalAuthor: set.author || set.originalAuthor || '',
+      description: set.description || '',
     };
 
     this.state.sets.push(newSet);
@@ -3450,13 +5147,36 @@ const App = {
 
     // フォームに既存の値をセット
     document.getElementById('set-name-input').value = set.name;
+    const authorInput = document.getElementById('set-author-input');
+    if (authorInput) {
+      authorInput.value = set.originalAuthor || set.author || '';
+    }
+    const descriptionInput = document.getElementById('set-description-input');
+    if (descriptionInput) {
+      descriptionInput.value = set.description || '';
+    }
     this.renderSelectedRecipes();
     this.updateSaveSetButton();
   },
 
   deleteSet(setId) {
-    if (confirm('このセットを削除しますか？')) {
+    const isSampleSet = this.sampleSets.some(set => String(set.id) === String(setId));
+    const isUserSet = this.state.sets.some(set => String(set.id) === String(setId));
+    if (isSampleSet && !isUserSet) {
+      if (confirm('レシピ帳から削除しますか？')) {
+        const hidden = new Set(this.state.hiddenSampleSetIds || []);
+        hidden.add(String(setId));
+        this.state.hiddenSampleSetIds = Array.from(hidden);
+        this.saveState();
+        this.closeModal();
+        this.renderMySets();
+        this.showToast('削除しました');
+      }
+      return;
+    }
+    if (confirm('レシピ帳から削除しますか？')) {
       this.state.sets = this.state.sets.filter(s => s.id !== setId);
+      this.removeCreatorPublishedSetBySource(setId);
       this.saveState();
       this.closeModal();
       this.renderMySets();
@@ -3533,7 +5253,7 @@ const App = {
   getFilterStateByContext(context) {
     const key = context === 'public' ? 'public' : 'my';
     if (!this.filterState[key]) {
-      this.filterState[key] = { status: [], time: [], tag: [], rating: [] };
+      this.filterState[key] = { status: [], time: [], tag: [], rating: [], follow: [] };
     }
     return this.filterState[key];
   },
@@ -3576,6 +5296,10 @@ const App = {
   renderFilterOptions() {
     const context = this.activeFilterContext || 'my';
     const state = this.getFilterStateByContext(context);
+    document.querySelectorAll('#modal-filter [data-filter-context]').forEach(section => {
+      const target = section.dataset.filterContext;
+      section.classList.toggle('hidden', target !== context);
+    });
     document.querySelectorAll('#modal-filter .filter-chip').forEach(btn => {
       const group = btn.dataset.group;
       const value = btn.dataset.value;
@@ -3602,7 +5326,7 @@ const App = {
 
   resetFilters() {
     const context = this.activeFilterContext || 'my';
-    this.filterState[context] = { status: [], time: [], tag: [], rating: [] };
+    this.filterState[context] = { status: [], time: [], tag: [], rating: [], follow: [] };
     this.renderFilterOptions();
     this.updateFilterSummary(context);
   },
@@ -3611,6 +5335,11 @@ const App = {
     const context = this.activeFilterContext || 'my';
     this.updateFilterSummary(context);
     this.closeModal();
+    if (context === 'public') {
+      this.filterPublicItems();
+    } else {
+      this.filterMyItems();
+    }
   },
 
   updateFilterSummary(context) {
@@ -3625,6 +5354,7 @@ const App = {
       ...state.time,
       ...state.tag,
       ...state.rating,
+      ...state.follow,
     ];
 
     summary.innerHTML = `
@@ -3651,30 +5381,81 @@ const App = {
       ? `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`
       : '';
     const isSaved = this.isRecipeSaved(recipe);
+    const creatorInfo = this.getRecipeCreatorInfo(recipe);
+    const chefLink = this.buildCreatorDetailLink(creatorInfo);
+    const canShare = this.canShareRecipe(recipe);
+    const createSetButton = `
+      <div style="margin-top: 16px;">
+        <button class="btn-secondary" style="width: 100%;" onclick="App.startSetCreateFromRecipe('${recipe.id}')">
+          <span class="material-icons-round">playlist_add</span>
+          ここからセットを作る
+        </button>
+      </div>
+    `;
     const modal = document.getElementById('modal-recipe-detail');
     document.getElementById('detail-recipe-name').textContent = recipe.name;
 
     const body = document.getElementById('detail-recipe-body');
     if (!access.accessible) {
-      const membershipNote = access.isMembership ? 'メンバーシップでも見放題' : '';
-      body.innerHTML = `
-        <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
-        ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
-        <div style="margin-top: 16px; color: var(--text-sub);">
-          購入するとレシピの中身が見られるよ
-        </div>
-        ${membershipNote ? `<p style="margin-top: 8px; font-size: 12px; color: var(--text-hint);">${membershipNote}</p>` : ''}
-        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
-          <button class="btn-primary" style="width: 100%;" onclick="App.purchasePublicRecipe('${recipe.id}')">
-            購入する ${this.formatPrice(access.price)}
+      if (access.status === 'locked') {
+        body.innerHTML = `
+          <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
+          ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+          ${chefLink}
+          <div style="margin-top: 16px; color: var(--text-sub);">
+            加入するとレシピの中身が見られるよ
+          </div>
+          <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn-primary" style="width: 100%;" onclick="App.showMembershipPlansByRecipe('${recipe.id}')">
+              プランを見る
+            </button>
+          </div>
+        `;
+      } else {
+        const membershipNote = access.isMembership ? 'メンバーシップでも見放題' : '';
+        const membershipAction = access.isMembership && !access.isMember ? `
+          <button class="btn-secondary" style="width: 100%;" onclick="App.showMembershipPlansByRecipe('${recipe.id}')">
+            プランを見る
           </button>
-          <p style="font-size: 12px; color: var(--text-hint); text-align: center;">購入後に「保存」でレシピ帳へ</p>
+        ` : '';
+        body.innerHTML = `
+          <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
+          ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+          ${chefLink}
+          <div style="margin-top: 16px; color: var(--text-sub);">
+            購入するとレシピの中身が見られるよ
+          </div>
+          ${membershipNote ? `<p style="margin-top: 8px; font-size: 12px; color: var(--text-hint);">${membershipNote}</p>` : ''}
+          <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn-primary" style="width: 100%;" onclick="App.purchasePublicRecipe('${recipe.id}')">
+              購入する ${this.formatPrice(access.price)}
+            </button>
+            ${membershipAction}
+            <p style="font-size: 12px; color: var(--text-hint); text-align: center;">購入後に「保存」でレシピ帳へ</p>
+          </div>
+        `;
+      }
+    } else {
+      const isCreator = this.isCreatorAccount();
+      const isUserRecipe = recipe.id.startsWith('recipe-');
+      const publishInfo = (isCreator && isUserRecipe)
+        ? this.getCreatorPublishedRecipeBySource(recipe.id)
+        : null;
+      const canPublish = isCreator && isUserRecipe && this.canPublishRecipe(recipe);
+      const publishBadge = publishInfo ? this.buildPublishAccessBadge(publishInfo) : '';
+      const publishLabel = publishInfo ? '公開内容を編集' : 'レシピカタログに公開';
+      const createSetButton = `
+        <div style="margin-top: 16px;">
+          <button class="btn-secondary" style="width: 100%;" onclick="App.startSetCreateFromRecipe('${recipe.id}')">
+            <span class="material-icons-round">playlist_add</span>
+            ここからセットを作る
+          </button>
         </div>
       `;
-    } else {
       body.innerHTML = `
         <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
         ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+        ${chefLink}
         <div style="margin-top: 16px; margin-bottom: 16px;">
           <strong>${recipe.servings}人前</strong>
           <span style="margin-left: 8px; color: var(--text-hint);">${(recipe.tags || []).join(' ')}</span>
@@ -3710,9 +5491,30 @@ const App = {
             `}
           </div>
         ` : ''}
+        ${createSetButton}
+        ${(isCreator && isUserRecipe) ? `
+          <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+            ${publishBadge ? `<div class="detail-badges">${publishBadge}</div>` : ''}
+            ${(canPublish || publishInfo) ? `
+              <button class="btn-secondary" style="width: 100%;" onclick="App.openCreatorPublishModal('recipe', '${recipe.id}')">
+                ${publishLabel}
+              </button>
+            ` : `
+              <p class="empty-text">引き込んだレシピは公開できません</p>
+            `}
+          </div>
+        ` : ''}
+        ${canShare ? `
+          <div style="margin-top: 16px;">
+            <button class="btn-secondary" style="width: 100%;" onclick="App.openShareModal('recipe', '${recipe.id}')">
+              <span class="material-icons-round">share</span>
+              外部共有
+            </button>
+          </div>
+        ` : ''}
         ${recipe.id.startsWith('recipe-') ? `
           <button class="btn-text" style="color: red; margin-top: 24px;" onclick="App.deleteRecipe('${recipe.id}')">
-            このレシピを削除
+            レシピ帳から削除
           </button>
         ` : ''}
       `;
@@ -3722,8 +5524,9 @@ const App = {
   },
 
   deleteRecipe(recipeId) {
-    if (confirm('このレシピを削除する？')) {
+    if (confirm('レシピ帳から削除しますか？')) {
       this.state.recipes = this.state.recipes.filter(r => r.id !== recipeId);
+      this.removeCreatorPublishedRecipeBySource(recipeId);
       this.saveState();
       this.closeModal();
       this.renderRecipesScreen();
@@ -3747,6 +5550,17 @@ const App = {
       ? `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`
       : '';
     const isSaved = this.isRecipeSaved(recipe);
+    const creatorInfo = this.getRecipeCreatorInfo(recipe);
+    const chefLink = this.buildCreatorDetailLink(creatorInfo);
+    const canShare = this.canShareRecipe(recipe);
+    const createSetButton = `
+      <div style="margin-top: 16px;">
+        <button class="btn-secondary" style="width: 100%;" onclick="App.startSetCreateFromRecipe('${recipe.id}')">
+          <span class="material-icons-round">playlist_add</span>
+          ここからセットを作る
+        </button>
+      </div>
+    `;
 
     // セット詳細モーダルを閉じる
     document.getElementById('modal-set-detail').classList.add('hidden');
@@ -3756,28 +5570,56 @@ const App = {
 
     const body = document.getElementById('detail-recipe-body');
     if (!access.accessible) {
-      const membershipNote = access.isMembership ? 'メンバーシップでも見放題' : '';
-      body.innerHTML = `
-        <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
-        ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
-        <div style="margin-top: 16px; color: var(--text-sub);">
-          購入するとレシピの中身が見られるよ
-        </div>
-        ${membershipNote ? `<p style="margin-top: 8px; font-size: 12px; color: var(--text-hint);">${membershipNote}</p>` : ''}
-        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
-          <button class="btn-primary" style="width: 100%;" onclick="App.purchasePublicRecipe('${recipe.id}')">
-            購入する ${this.formatPrice(access.price)}
+      if (access.status === 'locked') {
+        body.innerHTML = `
+          <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
+          ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+          ${chefLink}
+          <div style="margin-top: 16px; color: var(--text-sub);">
+            加入するとレシピの中身が見られるよ
+          </div>
+          <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn-primary" style="width: 100%;" onclick="App.showMembershipPlansByRecipe('${recipe.id}')">
+              プランを見る
+            </button>
+          </div>
+          <button class="btn-secondary" style="width: 100%; margin-top: 16px;" onclick="App.backToSetDetail()">
+            <span class="material-icons-round">arrow_back</span>
+            セット詳細に戻る
           </button>
-        </div>
-        <button class="btn-secondary" style="width: 100%; margin-top: 16px;" onclick="App.backToSetDetail()">
-          <span class="material-icons-round">arrow_back</span>
-          セット詳細に戻る
-        </button>
-      `;
+        `;
+      } else {
+        const membershipNote = access.isMembership ? 'メンバーシップでも見放題' : '';
+        const membershipAction = access.isMembership && !access.isMember ? `
+          <button class="btn-secondary" style="width: 100%;" onclick="App.showMembershipPlansByRecipe('${recipe.id}')">
+            プランを見る
+          </button>
+        ` : '';
+        body.innerHTML = `
+          <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
+          ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+          ${chefLink}
+          <div style="margin-top: 16px; color: var(--text-sub);">
+            購入するとレシピの中身が見られるよ
+          </div>
+          ${membershipNote ? `<p style="margin-top: 8px; font-size: 12px; color: var(--text-hint);">${membershipNote}</p>` : ''}
+          <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn-primary" style="width: 100%;" onclick="App.purchasePublicRecipe('${recipe.id}')">
+              購入する ${this.formatPrice(access.price)}
+            </button>
+            ${membershipAction}
+          </div>
+          <button class="btn-secondary" style="width: 100%; margin-top: 16px;" onclick="App.backToSetDetail()">
+            <span class="material-icons-round">arrow_back</span>
+            セット詳細に戻る
+          </button>
+        `;
+      }
     } else {
       body.innerHTML = `
         <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
         ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+        ${chefLink}
         <div style="margin-top: 16px; margin-bottom: 16px;">
           <strong>${recipe.servings}人前</strong>
           <span style="margin-left: 8px; color: var(--text-hint);">${(recipe.tags || []).join(' ')}</span>
@@ -3811,6 +5653,15 @@ const App = {
                 レシピ帳に保存
               </button>
             `}
+          </div>
+        ` : ''}
+        ${createSetButton}
+        ${canShare ? `
+          <div style="margin-top: 16px;">
+            <button class="btn-secondary" style="width: 100%;" onclick="App.openShareModal('recipe', '${recipe.id}')">
+              <span class="material-icons-round">share</span>
+              外部共有
+            </button>
           </div>
         ` : ''}
         <button class="btn-secondary" style="width: 100%; margin-top: 16px;" onclick="App.backToSetDetail()">
@@ -3953,7 +5804,6 @@ const App = {
   },
 
   addExtraShoppingItemFromPopup() {
-    this.shoppingPopupChecked = [];
     this.addExtraShoppingItemFromInputs(
       'shopping-extra-name-popup',
       'shopping-extra-amount-popup',
@@ -3968,7 +5818,7 @@ const App = {
     this.state.shoppingExtraItems = this.state.shoppingExtraItems.filter(item => item.key !== key);
     this.state.shoppingPurchased = (this.state.shoppingPurchased || []).filter(k => k !== key);
     this.state.shoppingChecked = (this.state.shoppingChecked || []).filter(k => k !== key);
-    this.shoppingPopupChecked = [];
+    this.shoppingPopupChecked = (this.shoppingPopupChecked || []).filter(k => k !== key);
     this.saveState();
     this.renderShoppingScreen();
     this.renderShoppingPopup();
@@ -4100,13 +5950,31 @@ const App = {
       const access = this.getRecipeAccessInfo(recipe);
       const badges = `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`;
       const isSaved = this.isRecipeSaved(recipe);
+      const creatorInfo = this.getRecipeCreatorInfo(recipe);
+      const chefId = this.getRecipeChefId(recipe);
+      const chefHtml = this.buildCreatorChip(creatorInfo);
       let actionHtml = '';
       if (!access.accessible) {
-        actionHtml = `
-          <button class="btn-mini btn-mini-primary" onclick="event.stopPropagation(); App.purchasePublicRecipe('${recipe.id}')">
-            購入 ${this.formatPrice(access.price)}
-          </button>
-        `;
+        if (access.status === 'locked') {
+          actionHtml = `
+            <button class="btn-mini btn-mini-primary" onclick="event.stopPropagation(); App.showMembershipPlansByRecipe('${recipe.id}')">
+              プランを見る
+            </button>
+          `;
+        } else {
+          actionHtml = `
+            <button class="btn-mini btn-mini-primary" onclick="event.stopPropagation(); App.purchasePublicRecipe('${recipe.id}')">
+              購入 ${this.formatPrice(access.price)}
+            </button>
+          `;
+          if (access.isMembership && !access.isMember) {
+            actionHtml += `
+              <button class="btn-mini btn-mini-ghost" onclick="event.stopPropagation(); App.showMembershipPlansByRecipe('${recipe.id}')">
+                プランを見る
+              </button>
+            `;
+          }
+        }
       } else if (isSaved) {
         actionHtml = `
           <button class="btn-mini btn-mini-ghost" disabled>
@@ -4122,11 +5990,12 @@ const App = {
       }
 
       return `
-        <div class="recipe-list-item" onclick="App.handlePublicRecipeClick('${recipe.id}')">
+        <div class="recipe-list-item" data-chef-id="${chefId || ''}" onclick="App.handlePublicRecipeClick('${recipe.id}')">
           <span class="recipe-list-emoji">${recipe.emoji || '🍽️'}</span>
           <div class="recipe-list-info">
             <div class="recipe-list-name">${recipe.name}</div>
             <div class="recipe-list-meta">${(recipe.tags || []).join(' ')}</div>
+            ${chefHtml}
             <div class="recipe-list-badges">${badges}</div>
           </div>
           <div class="recipe-list-actions">
@@ -4143,41 +6012,67 @@ const App = {
     list.innerHTML = this.publicSets.map(set => {
       const recipes = this.getRecipesFromSet(set);
       const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
+      const tagsText = (set.tags || []).join(' ');
+      const metaParts = [];
+      if (recipes.length) metaParts.push(`${recipes.length}品`);
+      if (tagsText) metaParts.push(tagsText);
+      const metaText = metaParts.length ? metaParts.join(' ・ ') : (previewNames || '');
       const access = this.getSetAccessInfo(set);
-      const badges = this.buildAccessBadge(access);
-      const actionHtml = access.accessible
-        ? `
-          <button class="btn-use-set" onclick="event.stopPropagation(); App.usePublicSetAsKondate('${set.id}')">
-            <span class="material-icons-round">add</span>
-            登録
+      const badges = `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`;
+      const chefId = this.getSetChefId(set);
+      const sourceLabel = this.getSetSourceLabel(set);
+      const creatorInfo = {
+        type: chefId ? 'chef' : 'user',
+        id: chefId || '',
+        name: sourceLabel,
+      };
+      const chefHtml = this.buildCreatorChip(creatorInfo);
+      const isSaved = this.isPublicSetSaved(set.id);
+      const registerStatus = this.getPublicSetRegisterStatus(set.id);
+      const isRegistered = registerStatus.isCurrent || registerStatus.isNext;
+      const registerLabel = (registerStatus.isNext && !registerStatus.isCurrent)
+        ? '次の献立に登録済み'
+        : '登録済み';
+      let actionHtml = '';
+      if (access.accessible) {
+        const registerButton = isRegistered
+          ? `<button class="btn-mini btn-mini-ghost" disabled>${registerLabel}</button>`
+          : `<button class="btn-mini btn-mini-primary" onclick="event.stopPropagation(); App.usePublicSetAsKondate('${set.id}')">登録</button>`;
+        const saveButton = isSaved
+          ? `<button class="btn-mini btn-mini-ghost" disabled>保存済み</button>`
+          : `<button class="btn-mini" onclick="event.stopPropagation(); App.savePublicSet('${set.id}')">保存</button>`;
+        actionHtml = `${registerButton}${saveButton}`;
+      } else if (access.status === 'locked') {
+        actionHtml = `
+          <button class="btn-mini btn-mini-primary" onclick="event.stopPropagation(); App.showMembershipPlansBySet('${set.id}')">
+            プランを見る
           </button>
-          <button class="btn-save-set" onclick="event.stopPropagation(); App.savePublicSet('${set.id}')">
-            <span class="material-icons-round">bookmark_border</span>
-            保存
-          </button>
-        `
-        : `
-          <button class="btn-use-set" onclick="event.stopPropagation(); App.purchasePublicSet('${set.id}')">
-            <span class="material-icons-round">shopping_bag</span>
+        `;
+      } else {
+        actionHtml = `
+          <button class="btn-mini btn-mini-primary" onclick="event.stopPropagation(); App.purchasePublicSet('${set.id}')">
             購入 ${this.formatPrice(access.price)}
           </button>
         `;
+        if (access.isMembership && !access.isMember) {
+          actionHtml += `
+            <button class="btn-mini btn-mini-ghost" onclick="event.stopPropagation(); App.showMembershipPlansBySet('${set.id}')">
+              プランを見る
+            </button>
+          `;
+        }
+      }
       return `
-        <div class="public-set-card" onclick="App.showPublicSetDetail('${set.id}')">
-          <div class="public-set-header">
-            <span class="public-set-name">${set.name}</span>
-            <span class="public-set-author">
-              <span class="material-icons-round">person</span>
-              ${set.author}
-            </span>
+        <div class="recipe-list-item" data-chef-id="${chefId || ''}" onclick="App.showPublicSetDetail('${set.id}')">
+          <span class="recipe-list-emoji">🍽️</span>
+          <div class="recipe-list-info">
+            <div class="recipe-list-name">${set.name}</div>
+            <div class="recipe-list-meta">${metaText}</div>
+            ${chefHtml}
+            <div class="recipe-list-badges">${badges}</div>
           </div>
-          <div class="public-set-badges">${badges}</div>
-          <div class="public-set-preview">${previewNames}${recipes.length > 3 ? '...' : ''}</div>
-          <div class="public-set-meta">
-            <span class="public-set-count">${recipes.length}品</span>
-            <div class="public-set-actions-inline">
-              ${actionHtml}
-            </div>
+          <div class="recipe-list-actions">
+            ${actionHtml}
           </div>
         </div>
       `;
@@ -4205,6 +6100,9 @@ const App = {
   filterPublicItems() {
     const query = document.getElementById('public-search')?.value.toLowerCase() || '';
     const category = this.selectedPublicCategory || 'all';
+    const state = this.getFilterStateByContext('public');
+    const followOnly = (state.follow || []).includes('フォロー中');
+    const followedChefs = new Set((this.state.followedChefs || []).map(item => item.chefId));
 
     if (this.currentPublicTab === 'recipes') {
       const items = document.querySelectorAll('#public-recipe-list .recipe-list-item');
@@ -4213,15 +6111,20 @@ const App = {
         const tags = item.querySelector('.recipe-list-meta').textContent.toLowerCase();
         const matchesQuery = name.includes(query) || tags.includes(query);
         const matchesCategory = category === 'all' || tags.includes(category.toLowerCase());
-        item.style.display = (matchesQuery && matchesCategory) ? '' : 'none';
+        const chefId = item.dataset.chefId || '';
+        const matchesFollow = !followOnly || (chefId && followedChefs.has(chefId));
+        item.style.display = (matchesQuery && matchesCategory && matchesFollow) ? '' : 'none';
       });
     } else {
-      const items = document.querySelectorAll('#public-set-list .public-set-card');
+      const items = document.querySelectorAll('#public-set-list .recipe-list-item');
       items.forEach(item => {
-        const name = item.querySelector('.public-set-name')?.textContent.toLowerCase() || '';
-        const author = item.querySelector('.public-set-author')?.textContent.toLowerCase() || '';
-        const matchesQuery = name.includes(query) || author.includes(query);
-        item.style.display = matchesQuery ? '' : 'none';
+        const name = item.querySelector('.recipe-list-name')?.textContent.toLowerCase() || '';
+        const meta = item.querySelector('.recipe-list-meta')?.textContent.toLowerCase() || '';
+        const author = item.querySelector('.chef-chip')?.textContent.toLowerCase() || '';
+        const matchesQuery = name.includes(query) || meta.includes(query) || author.includes(query);
+        const chefId = item.dataset.chefId || '';
+        const matchesFollow = !followOnly || (chefId && followedChefs.has(chefId));
+        item.style.display = (matchesQuery && matchesFollow) ? '' : 'none';
       });
     }
   },
@@ -4252,6 +6155,10 @@ const App = {
       this.showToast('メンバーシップで見られるよ');
       return;
     }
+    if (access.status === 'locked') {
+      this.showMembershipPlansByRecipe(recipeId);
+      return;
+    }
     if (access.free) {
       this.showToast('フリーのレシピだよ');
       return;
@@ -4267,6 +6174,7 @@ const App = {
     if (modal && !modal.classList.contains('hidden')) {
       this.showRecipeDetail(recipeId);
     }
+    this.showPurchaseSavePrompt('recipe', recipeId);
   },
 
   purchasePublicSet(setId) {
@@ -4274,6 +6182,10 @@ const App = {
     if (!set) return;
 
     const access = this.getSetAccessInfo(set);
+    if (access.status === 'locked') {
+      this.showMembershipPlansBySet(setId);
+      return;
+    }
     if (access.free) {
       this.showToast('フリーのセットだよ');
       return;
@@ -4293,6 +6205,43 @@ const App = {
     if (modal && !modal.classList.contains('hidden')) {
       this.showPublicSetDetail(setId);
     }
+    this.showPurchaseSavePrompt('set', setId);
+  },
+
+  showPurchaseSavePrompt(type, itemId) {
+    const modal = document.getElementById('modal-purchase-save');
+    if (!modal) return;
+
+    let name = '';
+    let label = '';
+    let message = '';
+
+    if (type === 'recipe') {
+      const recipe = this.publicRecipes.find(r => r.id === itemId);
+      if (!recipe) return;
+      name = recipe.name;
+      label = 'レシピ';
+      message = '購入したレシピをレシピ帳に保存しましょう';
+    } else if (type === 'set') {
+      const set = this.publicSets.find(s => s.id === itemId);
+      if (!set) return;
+      name = set.name;
+      label = 'セット';
+      message = '購入したセットをレシピ帳に保存しましょう';
+    } else {
+      return;
+    }
+
+    this.pendingPurchaseSave = { type, id: itemId };
+
+    const nameEl = document.getElementById('purchase-save-name');
+    const typeEl = document.getElementById('purchase-save-type');
+    const messageEl = document.getElementById('purchase-save-message');
+    if (nameEl) nameEl.textContent = name || '購入アイテム';
+    if (typeEl) typeEl.textContent = label;
+    if (messageEl) messageEl.textContent = message;
+
+    modal.classList.remove('hidden');
   },
 
   addPublicRecipeToMine(recipeId) {
@@ -4306,7 +6255,7 @@ const App = {
     }
 
     // 既に追加済みかチェック
-    if (this.state.recipes.some(r => r.name === recipe.name)) {
+    if (this.state.recipes.some(r => r.sourceRecipeId === recipe.id)) {
       this.showToast('保存済みです');
       return;
     }
@@ -4315,6 +6264,8 @@ const App = {
     const newRecipe = {
       ...recipe,
       id: 'recipe-' + Date.now(),
+      sourceRecipeId: recipe.id,
+      chefId: this.getRecipeChefId(recipe),
     };
     this.state.recipes.push(newRecipe);
     this.saveState();
@@ -4333,7 +6284,7 @@ const App = {
     }
 
     // 既に保存済みかチェック
-    if (this.state.sets.some(s => s.name === set.name)) {
+    if (this.state.sets.some(s => s.sourceSetId === set.id)) {
       this.showToast('保存済みです');
       return;
     }
@@ -4343,10 +6294,13 @@ const App = {
       ...set,
       id: 'set-' + Date.now(),
       originalAuthor: set.author,
+      sourceSetId: set.id,
+      chefId: this.getSetChefId(set),
     };
     this.state.sets.push(newSet);
     this.saveState();
     this.showToast('セットを保存しました');
+    this.renderPublicSets();
   },
 
   showPublicSetDetail(setId) {
@@ -4355,16 +6309,67 @@ const App = {
 
     const recipes = this.getRecipesFromSet(set);
     const access = this.getSetAccessInfo(set);
-    const badges = this.buildAccessBadge(access);
+    const badges = `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`;
+    const chefId = this.getSetChefId(set);
+    const chefLabel = chefId ? this.getChefLabel(chefId) : set.author;
+    const isSaved = this.isPublicSetSaved(set.id);
+    const registerStatus = this.getPublicSetRegisterStatus(set.id);
+    const isRegistered = registerStatus.isCurrent || registerStatus.isNext;
+    const registeredLabel = (registerStatus.isNext && !registerStatus.isCurrent)
+      ? '次の献立に登録済み'
+      : '登録済み';
+    const chefLink = chefId ? `
+      <button class="detail-chef-link" onclick="App.showChefDetail('${chefId}')">
+        <span class="material-icons-round">person</span>
+        ${chefLabel}
+      </button>
+    ` : `
+      <span class="detail-chef-label">
+        <span class="material-icons-round">person</span>
+        ${set.author}
+      </span>
+    `;
 
     const modal = document.getElementById('modal-set-detail');
     document.getElementById('detail-set-name').textContent = set.name;
 
     const body = document.getElementById('detail-set-body');
+    const actionBlock = access.accessible
+      ? `
+        <button class="btn-primary" style="width: 100%;" ${isRegistered ? 'disabled' : `onclick="App.usePublicSetAsKondate('${set.id}')"`}>
+          <span class="material-icons-round">calendar_today</span>
+          ${isRegistered ? registeredLabel : '献立表に登録する'}
+        </button>
+        <button class="btn-secondary" style="width: 100%;" ${isSaved ? 'disabled' : `onclick="App.savePublicSet('${set.id}'); App.closeModal();"`}>
+          <span class="material-icons-round">bookmark_border</span>
+          ${isSaved ? '保存済み' : 'レシピ帳に保存'}
+        </button>
+      `
+      : access.status === 'locked'
+        ? `
+          <button class="btn-primary" style="width: 100%;" onclick="App.showMembershipPlansBySet('${set.id}')">
+            <span class="material-icons-round">card_membership</span>
+            プランを見る
+          </button>
+          <p style="font-size: 12px; color: var(--text-hint); text-align: center;">加入すると献立表に登録できます</p>
+        `
+        : `
+          <button class="btn-primary" style="width: 100%;" onclick="App.purchasePublicSet('${set.id}')">
+            <span class="material-icons-round">shopping_bag</span>
+            購入して使う ${this.formatPrice(access.price)}
+          </button>
+          ${access.isMembership && !access.isMember ? `
+            <button class="btn-secondary" style="width: 100%;" onclick="App.showMembershipPlansBySet('${set.id}')">
+              <span class="material-icons-round">card_membership</span>
+              プランを見る
+            </button>
+          ` : ''}
+          <p style="font-size: 12px; color: var(--text-hint); text-align: center;">購入すると献立表に登録できます</p>
+        `;
+
     body.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: var(--text-sub);">
-        <span class="material-icons-round" style="font-size: 18px;">person</span>
-        ${set.author}
+      <div class="detail-chef-row">
+        ${chefLink}
       </div>
       <div class="detail-badges" style="margin-bottom: 12px;">
         ${badges}
@@ -4389,22 +6394,7 @@ const App = {
         <div class="scroll-hint"></div>
       </div>
       <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px;">
-        ${access.accessible ? `
-          <button class="btn-primary" style="width: 100%;" onclick="App.usePublicSetAsKondate('${set.id}')">
-            <span class="material-icons-round">calendar_today</span>
-            献立表に登録する
-          </button>
-          <button class="btn-secondary" style="width: 100%;" onclick="App.savePublicSet('${set.id}'); App.closeModal();">
-            <span class="material-icons-round">bookmark_border</span>
-            わたしのセットに保存
-          </button>
-        ` : `
-          <button class="btn-primary" style="width: 100%;" onclick="App.purchasePublicSet('${set.id}')">
-            <span class="material-icons-round">shopping_bag</span>
-            購入して使う ${this.formatPrice(access.price)}
-          </button>
-          <p style="font-size: 12px; color: var(--text-hint); text-align: center;">購入すると献立表に登録できます</p>
-        `}
+        ${actionBlock}
       </div>
     `;
 
@@ -4418,7 +6408,11 @@ const App = {
 
     const access = this.getSetAccessInfo(set);
     if (!access.accessible) {
-      this.showToast('購入すると使えるよ');
+      if (access.status === 'locked') {
+        this.showToast('加入すると使えるよ');
+      } else {
+        this.showToast('購入すると使えるよ');
+      }
       return;
     }
 
@@ -4446,12 +6440,609 @@ const App = {
   },
 
   // ========================================
+  // 通知
+  // ========================================
+  showNotifications() {
+    this.showScreen('notifications');
+  },
+
+  switchNotificationTab(tab) {
+    this.currentNotificationTab = tab;
+    this.renderNotificationsScreen();
+  },
+
+  renderNotificationsScreen() {
+    const list = document.getElementById('notification-list');
+    const empty = document.getElementById('notification-empty');
+    const markAll = document.getElementById('notification-mark-all');
+    if (!list || !empty) return;
+
+    const notifications = (this.state.notifications || [])
+      .filter(n => n.category === this.currentNotificationTab)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    document.querySelectorAll('#screen-notifications .tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === `notification-${this.currentNotificationTab}`);
+    });
+
+    if (notifications.length === 0) {
+      list.innerHTML = '';
+      empty.classList.remove('hidden');
+      if (markAll) markAll.disabled = true;
+      return;
+    }
+    empty.classList.add('hidden');
+    if (markAll) markAll.disabled = notifications.length === 0;
+
+    list.innerHTML = notifications.map(n => {
+      const source = n.category === 'news'
+        ? `<span class="notification-source">${n.sourceName || '献立ループ事務局'}</span>`
+        : '';
+      const unreadClass = n.readAt ? '' : 'unread';
+      return `
+        <div class="notification-item ${unreadClass}" onclick="App.openNotification('${n.id}')">
+          <div class="notification-title">${n.title}</div>
+          ${source}
+          <div class="notification-message">${n.message}</div>
+          <div class="notification-date">${this.formatSimpleDate(n.createdAt)}</div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  openNotification(notificationId) {
+    const notifications = Array.isArray(this.state.notifications) ? this.state.notifications : [];
+    const target = notifications.find(n => n.id === notificationId);
+    if (!target) return;
+    this.markNotificationRead(notificationId);
+    this.renderNotificationsScreen();
+    if (target.category === 'personal') {
+      const modal = document.getElementById('modal-notification');
+      document.getElementById('notification-modal-title').textContent = target.title;
+      document.getElementById('notification-modal-body').textContent = target.message;
+      modal.classList.remove('hidden');
+    }
+  },
+
+  formatSimpleDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  },
+
+  formatMembershipDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+  },
+
+  // ========================================
+  // 料理家詳細
+  // ========================================
+  showChefDetail(chefId) {
+    this.currentChefId = chefId;
+    this.currentChefTab = 'home';
+    this.currentChefSort = 'newest';
+    this.currentChefFilter = 'all';
+    this.chefSearchQuery = '';
+    this.showScreen('chef-detail');
+  },
+
+  switchChefTab(tab) {
+    this.currentChefTab = tab;
+    this.renderChefDetailScreen();
+  },
+
+  filterChefItems() {
+    const input = document.getElementById('chef-search');
+    this.chefSearchQuery = input ? input.value.toLowerCase() : '';
+    this.renderChefDetailScreen();
+  },
+
+  switchChefFilter(filter) {
+    this.currentChefFilter = filter;
+    this.renderChefDetailScreen();
+  },
+
+  toggleChefSort() {
+    this.currentChefSort = this.currentChefSort === 'name' ? 'newest' : 'name';
+    this.renderChefDetailScreen();
+  },
+
+  getChefSortLabel() {
+    return this.currentChefSort === 'name' ? '名前順' : '新着順';
+  },
+
+  renderChefDetailScreen() {
+    const chef = this.getChefById(this.currentChefId) || this.chefs[0];
+    if (!chef) return;
+    this.currentChefId = chef.id;
+
+    const avatar = document.getElementById('chef-avatar');
+    const name = document.getElementById('chef-name');
+    const bio = document.getElementById('chef-bio');
+    const links = document.getElementById('chef-links');
+    const actions = document.getElementById('chef-actions');
+
+    if (avatar) avatar.textContent = chef.avatar || '👩‍🍳';
+    if (name) name.textContent = chef.name;
+    if (bio) bio.textContent = chef.bio;
+    if (links) {
+      links.innerHTML = (chef.links || []).map(link => `
+        <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="chef-link">${link.label}</a>
+      `).join('');
+    }
+
+    if (actions) {
+      const followed = this.isChefFollowed(chef.id);
+      actions.innerHTML = `
+        <button class="btn-secondary ${followed ? 'active' : ''}" onclick="App.toggleFollowChef('${chef.id}')">
+          ${followed ? 'フォロー解除' : 'フォローする'}
+        </button>
+      `;
+    }
+
+    document.querySelectorAll('#screen-chef-detail .tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === `chef-${this.currentChefTab}`);
+    });
+
+    const homeTab = document.getElementById('chef-tab-home');
+    const recipeTab = document.getElementById('chef-tab-recipes');
+    const setTab = document.getElementById('chef-tab-sets');
+    const membershipTab = document.getElementById('chef-tab-membership');
+    if (!homeTab || !recipeTab || !setTab || !membershipTab) return;
+
+    homeTab.classList.toggle('hidden', this.currentChefTab !== 'home');
+    recipeTab.classList.toggle('hidden', this.currentChefTab !== 'recipes');
+    setTab.classList.toggle('hidden', this.currentChefTab !== 'sets');
+    membershipTab.classList.toggle('hidden', this.currentChefTab !== 'membership');
+
+    const chefRecipes = this.publicRecipes.filter(recipe => this.getRecipeChefId(recipe) === chef.id);
+    const chefSets = this.publicSets.filter(set => this.getSetChefId(set) === chef.id);
+    const membership = this.getActiveSubscriptionByChef(chef.id);
+    const query = (this.chefSearchQuery || '').trim();
+    const matchesQuery = (item) => {
+      if (!query) return true;
+      const name = (item.name || '').toLowerCase();
+      const tags = Array.isArray(item.tags) ? item.tags.join(' ').toLowerCase() : '';
+      return name.includes(query) || tags.includes(query);
+    };
+
+    let filteredRecipes = chefRecipes.filter(recipe => matchesQuery(recipe));
+    let filteredSets = chefSets.filter(set => matchesQuery(set));
+
+    if (this.currentChefFilter === 'membership') {
+      filteredRecipes = filteredRecipes.filter(recipe => recipe.membership);
+      filteredSets = filteredSets.filter(set => set.membership);
+    }
+
+    if (this.currentChefSort === 'name') {
+      filteredRecipes = [...filteredRecipes].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+      filteredSets = [...filteredSets].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+    }
+
+    const filterRow = document.getElementById('chef-filter-row');
+    const filterChips = document.getElementById('chef-filter-chips');
+    const filterSummary = document.getElementById('chef-filter-summary');
+    const searchInput = document.getElementById('chef-search');
+    const showFilters = this.currentChefTab === 'recipes' || this.currentChefTab === 'sets';
+
+    if (filterRow) filterRow.classList.toggle('hidden', !showFilters);
+    if (filterChips) filterChips.classList.toggle('hidden', !showFilters);
+    if (searchInput && searchInput.value !== this.chefSearchQuery) {
+      searchInput.value = this.chefSearchQuery;
+    }
+    if (filterChips) {
+      filterChips.querySelectorAll('.filter-chip').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === this.currentChefFilter);
+      });
+    }
+    if (filterSummary) {
+      filterSummary.classList.toggle('hidden', !showFilters);
+      const filterLabel = this.currentChefFilter === 'membership' ? 'メンバー限定' : 'すべて';
+      filterSummary.textContent = `並び替え: ${this.getChefSortLabel()} / フィルター: ${filterLabel}`;
+    }
+
+    if (homeTab) {
+      const latestSet = chefSets[0];
+      const featuredRecipe = chefRecipes[0];
+      const membershipText = membership ? '加入中' : '未加入';
+      homeTab.innerHTML = `
+        <div class="chef-home-summary">
+          <div class="chef-summary-title">${chef.summary || '料理家の紹介'}</div>
+          <div class="chef-summary-meta">メンバーシップ: ${membershipText}</div>
+        </div>
+        <div class="chef-home-section">
+          <div class="section-header">
+            <span class="section-label">代表レシピ</span>
+          </div>
+          ${featuredRecipe ? `
+            <div class="recipe-list-item" onclick="App.showRecipeDetail('${featuredRecipe.id}')">
+              <span class="recipe-list-emoji">${featuredRecipe.emoji || '🍽️'}</span>
+              <div class="recipe-list-info">
+                <div class="recipe-list-name">${featuredRecipe.name}</div>
+                <div class="recipe-list-meta">${(featuredRecipe.tags || []).join(' ')}</div>
+              </div>
+              <div class="recipe-list-actions">
+                ${this.buildAccessBadge(this.getRecipeAccessInfo(featuredRecipe))}
+              </div>
+            </div>
+          ` : '<p class="empty-text">まだレシピがありません</p>'}
+        </div>
+        <div class="chef-home-section">
+          <div class="section-header">
+            <span class="section-label">最新セット</span>
+          </div>
+          ${latestSet ? `
+            <div class="public-set-card" onclick="App.showPublicSetDetail('${latestSet.id}')">
+              <div class="public-set-header">
+                <span class="public-set-name">${latestSet.name}</span>
+                <span class="public-set-author">
+                  <span class="material-icons-round">person</span>
+                  ${chef.name}
+                </span>
+              </div>
+              <div class="public-set-badges">${this.buildAccessBadge(this.getSetAccessInfo(latestSet))}</div>
+              <div class="public-set-preview">${(latestSet.tags || []).join(' ')}</div>
+            </div>
+          ` : '<p class="empty-text">まだセットがありません</p>'}
+        </div>
+      `;
+    }
+
+    if (recipeTab) {
+      recipeTab.innerHTML = filteredRecipes.length
+        ? filteredRecipes.map(recipe => {
+          const access = this.getRecipeAccessInfo(recipe);
+          const badges = `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`;
+          return `
+            <div class="recipe-list-item" onclick="App.handlePublicRecipeClick('${recipe.id}')">
+              <span class="recipe-list-emoji">${recipe.emoji || '🍽️'}</span>
+              <div class="recipe-list-info">
+                <div class="recipe-list-name">${recipe.name}</div>
+                <div class="recipe-list-meta">${(recipe.tags || []).join(' ')}</div>
+                <div class="recipe-list-badges">${badges}</div>
+              </div>
+            </div>
+          `;
+        }).join('')
+        : '<p class="empty-text">該当するレシピがありません</p>';
+    }
+
+    if (setTab) {
+      setTab.innerHTML = filteredSets.length
+        ? filteredSets.map(set => {
+          const access = this.getSetAccessInfo(set);
+          const badges = `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`;
+      return `
+        <div class="public-set-card" data-chef-id="${chefId || ''}" onclick="App.showPublicSetDetail('${set.id}')">
+          <div class="public-set-header">
+            <span class="public-set-name">${set.name}</span>
+            <span class="public-set-author">
+              <span class="material-icons-round">person</span>
+                  ${chef.name}
+                </span>
+              </div>
+              <div class="public-set-badges">${badges}</div>
+              <div class="public-set-preview">${(set.tags || []).join(' ')}</div>
+            </div>
+          `;
+        }).join('')
+        : '<p class="empty-text">該当するセットがありません</p>';
+    }
+
+    if (membershipTab) {
+      const plans = this.getMembershipPlansByChef(chef.id);
+      membershipTab.innerHTML = `
+        <div class="section-header">
+          <span class="section-label">メンバーシップ</span>
+          <span class="section-meta">${membership ? '加入中' : '未加入'}</span>
+        </div>
+        ${this.buildMembershipPlanList(plans, chef.id)}
+        ${membership ? `
+          <div class="membership-actions">
+            <button class="btn-secondary" onclick="App.showMembershipDetail('${chef.id}')">メンバーシップを見る</button>
+          </div>
+        ` : ''}
+      `;
+    }
+  },
+
+  buildMembershipPlanList(plans, chefId) {
+    if (!plans || plans.length === 0) {
+      return '<p class="empty-text">プランは準備中です</p>';
+    }
+    const membership = this.getActiveSubscriptionByChef(chefId);
+    return `
+      <div class="membership-plan-list">
+        ${plans.map(plan => {
+          const isActive = membership && membership.planId === plan.id;
+          return `
+            <div class="membership-plan-card ${plan.recommended ? 'recommended' : ''}">
+              <div class="plan-header">
+                <span class="plan-name">${plan.name}</span>
+                ${plan.recommended ? '<span class="badge badge-recommend">おすすめ</span>' : ''}
+              </div>
+              <div class="plan-price">${this.formatPrice(plan.price)}</div>
+              <p class="plan-desc">${plan.description || ''}</p>
+              <div class="plan-actions">
+                ${isActive ? `
+                  <button class="btn-mini btn-mini-ghost" disabled>加入中</button>
+                ` : `
+                  <button class="btn-mini btn-mini-primary" onclick="App.openMembershipCheckout('${chefId}', '${plan.id}')">
+                    加入する
+                  </button>
+                `}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  },
+
+  // ========================================
+  // メンバーシップ
+  // ========================================
+  showMembershipPlans(chefId) {
+    this.currentMembershipChefId = chefId;
+    this.showScreen('membership-plans');
+  },
+
+  showMembershipPlansByRecipe(recipeId) {
+    const recipe = this.getRecipeById(recipeId);
+    if (!recipe) return;
+    const chefId = this.getRecipeChefId(recipe);
+    if (!chefId) return;
+    this.showMembershipPlans(chefId);
+  },
+
+  showMembershipPlansBySet(setId) {
+    const set = this.publicSets.find(s => s.id === setId);
+    if (!set) return;
+    const chefId = this.getSetChefId(set);
+    if (!chefId) return;
+    this.showMembershipPlans(chefId);
+  },
+
+  renderMembershipPlansScreen() {
+    const chef = this.getChefById(this.currentMembershipChefId) || this.chefs[0];
+    if (!chef) return;
+    this.currentMembershipChefId = chef.id;
+
+    document.getElementById('membership-plans-chef').textContent = chef.name;
+    const isCreatorChef = chef.id === this.getCreatorChefId();
+    const membershipInfo = isCreatorChef ? this.getCreatorMembershipInfo() : null;
+    const noteText = (membershipInfo && membershipInfo.summary)
+      ? membershipInfo.summary
+      : (chef.summary || '料理家のメンバーシップ');
+    document.getElementById('membership-plans-note').textContent = noteText;
+
+    const list = document.getElementById('membership-plans-list');
+    const plans = this.getMembershipPlansByChef(chef.id);
+    list.innerHTML = this.buildMembershipPlanList(plans, chef.id);
+  },
+
+  openMembershipCheckout(chefId, planId) {
+    this.pendingMembershipPlanId = planId;
+    const plan = this.findMembershipPlanById(planId);
+    if (!plan) return;
+    document.getElementById('membership-checkout-plan').textContent = `${plan.name} (${this.formatPrice(plan.price)})`;
+    document.getElementById('membership-checkout-chef').textContent = this.getChefLabel(chefId);
+    document.getElementById('modal-membership-checkout').classList.remove('hidden');
+  },
+
+  completeMembershipJoin() {
+    const planId = this.pendingMembershipPlanId;
+    const plan = this.findMembershipPlanById(planId);
+    if (!plan) return;
+
+    const nextDate = new Date();
+    nextDate.setMonth(nextDate.getMonth() + 1);
+    const subscription = {
+      id: `sub-${Date.now()}`,
+      chefId: plan.chefId,
+      planId: plan.id,
+      status: 'active',
+      startedAt: new Date().toISOString(),
+      currentPeriodEnd: nextDate.toISOString(),
+      price: plan.price,
+    };
+    this.state.membershipSubscriptions.push(subscription);
+    this.saveState();
+    this.addNotification({
+      category: 'personal',
+      title: 'メンバーシップに加入しました',
+      message: `${this.getChefLabel(plan.chefId)}の${plan.name}に加入しました。`,
+      sourceType: 'system',
+      sourceName: '',
+    });
+
+    document.getElementById('modal-membership-checkout').classList.add('hidden');
+    document.getElementById('modal-membership-success').classList.remove('hidden');
+  },
+
+  showMembershipDetail(chefId) {
+    this.currentMembershipChefId = chefId;
+    this.currentMembershipTab = 'sets';
+    this.showScreen('membership-detail');
+  },
+
+  switchMembershipTab(tab) {
+    this.currentMembershipTab = tab;
+    this.renderMembershipDetailScreen();
+  },
+
+  renderMembershipDetailScreen() {
+    const chef = this.getChefById(this.currentMembershipChefId);
+    if (!chef) return;
+    const membership = this.getActiveSubscriptionByChef(chef.id);
+    const isCreatorSelf = this.isCreatorAccount() && chef.id === this.getCreatorChefId();
+    const plan = membership ? this.findMembershipPlanById(membership.planId) : null;
+
+    document.getElementById('membership-detail-chef').textContent = chef.name;
+    document.getElementById('membership-detail-plan').textContent = plan ? plan.name : 'プラン';
+    document.getElementById('membership-detail-price').textContent = plan ? this.formatPrice(plan.price) : '-';
+    document.getElementById('membership-detail-next').textContent = membership
+      ? this.formatMembershipDate(membership.currentPeriodEnd)
+      : '-';
+    const statusLabel = membership
+      ? (membership.status === 'canceling' ? '解約予定' : '加入中')
+      : (isCreatorSelf ? 'プレビュー' : '未加入');
+    document.getElementById('membership-detail-status').textContent = statusLabel;
+
+    document.querySelectorAll('#screen-membership-detail .tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === `member-${this.currentMembershipTab}`);
+    });
+
+    const setTab = document.getElementById('member-tab-sets');
+    const recipeTab = document.getElementById('member-tab-recipes');
+    const boardTab = document.getElementById('member-tab-board');
+    const infoTab = document.getElementById('member-tab-info');
+    if (!setTab || !recipeTab || !boardTab || !infoTab) return;
+
+    setTab.classList.toggle('hidden', this.currentMembershipTab !== 'sets');
+    recipeTab.classList.toggle('hidden', this.currentMembershipTab !== 'recipes');
+    boardTab.classList.toggle('hidden', this.currentMembershipTab !== 'board');
+    infoTab.classList.toggle('hidden', this.currentMembershipTab !== 'info');
+
+    if (!membership && !isCreatorSelf) {
+      setTab.innerHTML = '<p class="empty-text">加入すると限定セットが見られます。</p>';
+      recipeTab.innerHTML = '<p class="empty-text">加入すると限定レシピが見られます。</p>';
+      boardTab.innerHTML = '<p class="empty-text">加入すると掲示板が見られます。</p>';
+      infoTab.innerHTML = '<p class="empty-text">プラン情報を確認してください。</p>';
+      return;
+    }
+
+    const memberSets = this.publicSets.filter(set => set.membership && this.getSetChefId(set) === chef.id);
+    const memberRecipes = this.publicRecipes.filter(recipe => recipe.membership && this.getRecipeChefId(recipe) === chef.id);
+    const threads = this.getBoardThreadsByChef(chef.id);
+
+    setTab.innerHTML = memberSets.length
+      ? memberSets.map(set => `
+        <div class="public-set-card" onclick="App.showPublicSetDetail('${set.id}')">
+          <div class="public-set-header">
+            <span class="public-set-name">${set.name}</span>
+            <span class="public-set-author">
+              <span class="material-icons-round">person</span>
+              ${chef.name}
+            </span>
+          </div>
+          <div class="public-set-preview">${(set.tags || []).join(' ')}</div>
+        </div>
+      `).join('')
+      : '<p class="empty-text">限定セットは準備中です</p>';
+
+    recipeTab.innerHTML = memberRecipes.length
+      ? memberRecipes.map(recipe => `
+        <div class="recipe-list-item" onclick="App.showRecipeDetail('${recipe.id}')">
+          <span class="recipe-list-emoji">${recipe.emoji || '🍽️'}</span>
+          <div class="recipe-list-info">
+            <div class="recipe-list-name">${recipe.name}</div>
+            <div class="recipe-list-meta">${(recipe.tags || []).join(' ')}</div>
+          </div>
+        </div>
+      `).join('')
+      : '<p class="empty-text">限定レシピは準備中です</p>';
+
+    boardTab.innerHTML = threads.length
+      ? threads.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).map(thread => {
+        const count = this.boardComments.filter(c => c.threadId === thread.id).length;
+        return `
+          <div class="board-thread" onclick="App.showBoardThread('${thread.id}')">
+            ${thread.pinned ? '<span class="badge badge-pin">固定</span>' : ''}
+            <div class="board-title">${thread.title}</div>
+            <div class="board-meta">${count}件のコメント</div>
+          </div>
+        `;
+      }).join('')
+      : '<p class="empty-text">掲示板は準備中です</p>';
+
+    const membershipInfo = isCreatorSelf ? this.getCreatorMembershipInfo() : null;
+    const welcomeText = membershipInfo?.welcome || '限定セットから見ていくと、料理家の世界観がつかめます。';
+    const summaryText = membershipInfo?.summary || (plan ? plan.description : 'プラン詳細は料理家ページで確認できます。');
+    infoTab.innerHTML = `
+      <div class="membership-info-card highlight">
+        <h3>ウェルカムガイド</h3>
+        <p>${welcomeText}</p>
+      </div>
+      <div class="membership-info-card">
+        <h3>プラン概要</h3>
+        <p>${summaryText}</p>
+        <p class="info-meta">次回更新: ${membership ? this.formatMembershipDate(membership.currentPeriodEnd) : '-'}</p>
+      </div>
+      <div class="membership-info-card">
+        <h3>料理家からのひとこと</h3>
+        <p>${chef.bio}</p>
+      </div>
+    `;
+  },
+
+  getBoardThreadsByChef(chefId) {
+    if (chefId === this.getCreatorChefId()) {
+      return this.state.creatorBoardThreads || [];
+    }
+    return this.boardThreads.filter(thread => thread.chefId === chefId);
+  },
+
+  findBoardThreadById(threadId) {
+    return [
+      ...this.boardThreads,
+      ...(this.state.creatorBoardThreads || []),
+    ].find(thread => thread.id === threadId) || null;
+  },
+
+  getBoardCommentsByThreadId(threadId) {
+    return this.boardComments.filter(comment => comment.threadId === threadId);
+  },
+
+  showBoardThread(threadId) {
+    const thread = this.findBoardThreadById(threadId);
+    if (!thread) return;
+    this.currentBoardThreadId = threadId;
+    const comments = this.getBoardCommentsByThreadId(threadId);
+    document.getElementById('board-thread-title').textContent = thread.title;
+    document.getElementById('board-thread-body').textContent = thread.body;
+    document.getElementById('board-thread-comments').innerHTML = comments.map(c => `
+      <div class="board-comment">
+        <span class="board-comment-name">${c.userName}</span>
+        <span class="board-comment-body">${c.body}</span>
+      </div>
+    `).join('');
+    document.getElementById('modal-board-thread').classList.remove('hidden');
+  },
+
+  // ========================================
   // モーダル
   // ========================================
+  confirmPurchaseSave() {
+    const pending = this.pendingPurchaseSave;
+    if (!pending) {
+      this.closePurchaseSavePrompt();
+      return;
+    }
+
+    if (pending.type === 'recipe') {
+      this.addPublicRecipeToMine(pending.id);
+    } else if (pending.type === 'set') {
+      this.savePublicSet(pending.id);
+    }
+
+    this.closePurchaseSavePrompt();
+  },
+
+  closePurchaseSavePrompt() {
+    this.pendingPurchaseSave = null;
+    const modal = document.getElementById('modal-purchase-save');
+    if (modal) modal.classList.add('hidden');
+  },
+
   closeModal() {
     document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
     this.pendingCookingLogId = null;
     this.pendingCookingLogPhoto = '';
+    this.pendingShareTarget = null;
+    this.pendingPurchaseSave = null;
   },
 
   // ========================================
@@ -4819,7 +7410,7 @@ const App = {
   // ========================================
   // 買い物リストポップアップ（REQ-004）
   // ========================================
-  shoppingPopupChecked: [], // ポップアップ内のチェック状態（一時的）
+  shoppingPopupChecked: [], // ポップアップ内のチェック状態（一時的、keyベース）
 
   showShoppingPopup() {
     this.shoppingPopupChecked = []; // チェック状態をリセット
@@ -4834,9 +7425,14 @@ const App = {
 
     // 未購入のもののみ表示
     const unpurchased = ingredients.filter(ing => !purchasedSet.has(ing.key));
+    const validKeys = new Set(unpurchased.map(ing => ing.key));
+    if (this.shoppingPopupChecked.some(key => !validKeys.has(key))) {
+      this.shoppingPopupChecked = this.shoppingPopupChecked.filter(key => validKeys.has(key));
+    }
+    const checkedSet = new Set(this.shoppingPopupChecked);
     const addCardHtml = `
       <div class="shopping-add-card compact">
-        <div class="shopping-add-title">食材を追加</div>
+        <div class="shopping-add-title">他の食材を追加</div>
         <div class="shopping-add-row">
           <input type="text" id="shopping-extra-name-popup" class="shopping-add-input" placeholder="追加する食材">
           <input type="number" id="shopping-extra-amount-popup" class="shopping-add-amount" value="1" min="0.1" step="0.1">
@@ -4853,21 +7449,17 @@ const App = {
     }
 
     // チェック済みを下に、未チェックを上に並べる
-    const uncheckedItems = unpurchased
-      .map((ing, index) => ({ ing, index }))
-      .filter(item => !this.shoppingPopupChecked.includes(item.index));
-    const checkedItems = unpurchased
-      .map((ing, index) => ({ ing, index }))
-      .filter(item => this.shoppingPopupChecked.includes(item.index));
+    const uncheckedItems = unpurchased.filter(ing => !checkedSet.has(ing.key));
+    const checkedItems = unpurchased.filter(ing => checkedSet.has(ing.key));
     const sortedItems = [...uncheckedItems, ...checkedItems];
 
     body.innerHTML = `
       <div class="shopping-popup-list">
-        ${sortedItems.map(({ ing, index }) => `
-          <div class="shopping-popup-item ${this.shoppingPopupChecked.includes(index) ? 'checked' : ''}" data-index="${index}" onclick="App.toggleShoppingPopupItem(${index})">
+        ${sortedItems.map(ing => `
+          <div class="shopping-popup-item ${checkedSet.has(ing.key) ? 'checked' : ''}" data-key="${ing.key}" onclick="App.toggleShoppingPopupItem('${ing.key}')">
             <div class="checkbox-wrapper">
               <span class="material-icons-round checkbox-icon">
-                ${this.shoppingPopupChecked.includes(index) ? 'check_circle' : 'radio_button_unchecked'}
+                ${checkedSet.has(ing.key) ? 'check_circle' : 'radio_button_unchecked'}
               </span>
             </div>
             <span class="shopping-item-name">${ing.name}${ing.isExtra ? ' <span class="shopping-badge">追加</span>' : ''}</span>
@@ -4886,19 +7478,20 @@ const App = {
     document.getElementById('btn-reflect-fridge').disabled = this.shoppingPopupChecked.length === 0;
   },
 
-  toggleShoppingPopupItem(index) {
-    const idx = this.shoppingPopupChecked.indexOf(index);
+  toggleShoppingPopupItem(key) {
+    const idx = this.shoppingPopupChecked.indexOf(key);
     const isChecking = idx < 0; // チェックを入れる場合
 
     // まずチェック状態を更新
     if (idx >= 0) {
       this.shoppingPopupChecked.splice(idx, 1);
     } else {
-      this.shoppingPopupChecked.push(index);
+      this.shoppingPopupChecked.push(key);
     }
 
     // チェックボックスのアイコンを即座に更新（視覚的フィードバック）
-    const item = document.querySelector(`.shopping-popup-item[data-index="${index}"]`);
+    const escapeKey = window.CSS && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
+    const item = document.querySelector(`.shopping-popup-item[data-key="${escapeKey}"]`);
     if (item) {
       const icon = item.querySelector('.checkbox-icon');
       if (icon) {
@@ -4927,13 +7520,14 @@ const App = {
     const ingredients = this.getShoppingItems();
     const purchasedSet = new Set(this.state.shoppingPurchased || []);
     const unpurchased = ingredients.filter(ing => !purchasedSet.has(ing.key));
+    const checkedSet = new Set(this.shoppingPopupChecked);
 
     if (!this.state.fridge) {
       this.state.fridge = [];
     }
 
-    this.shoppingPopupChecked.forEach(index => {
-      const ing = unpurchased[index];
+    unpurchased.forEach(ing => {
+      if (!checkedSet.has(ing.key)) return;
       if (!ing) return;
 
       const existing = this.state.fridge.find(
@@ -5109,6 +7703,7 @@ const App = {
     this.updateBadges();
     this.updateFilterSummary('my');
     this.updateFilterSummary('public');
+    this.renderCreatorNameOptions();
   },
 
   // ========================================
@@ -5117,6 +7712,7 @@ const App = {
   updateBadges() {
     const fridgeCount = (this.state.fridge || []).length;
     const shoppingCount = this.getShoppingListCount();
+    const notificationCount = this.getUnreadNotificationCount();
 
     // 冷蔵庫バッジ（全画面共通）
     const fridgeBadges = [
@@ -5131,6 +7727,11 @@ const App = {
       document.getElementById('badge-fridge-archive'),
       document.getElementById('badge-fridge-diagnosis'),
       document.getElementById('badge-fridge-purchases'),
+      document.getElementById('badge-fridge-payment-history'),
+      document.getElementById('badge-fridge-notifications'),
+      document.getElementById('badge-fridge-chef-detail'),
+      document.getElementById('badge-fridge-membership-plans'),
+      document.getElementById('badge-fridge-membership-detail'),
     ];
     fridgeBadges.forEach(badge => {
       if (badge) {
@@ -5147,6 +7748,30 @@ const App = {
     shoppingBadges.forEach(badge => {
       if (badge) {
         badge.classList.toggle('visible', shoppingCount > 0);
+      }
+    });
+
+    const notificationBadges = [
+      document.getElementById('badge-notif-main'),
+      document.getElementById('badge-notif-recipes'),
+      document.getElementById('badge-notif-public'),
+      document.getElementById('badge-notif-mypage'),
+      document.getElementById('badge-notif-set-select'),
+      document.getElementById('badge-notif-set-create'),
+      document.getElementById('badge-notif-recipe-add'),
+      document.getElementById('badge-notif-shopping'),
+      document.getElementById('badge-notif-archive'),
+      document.getElementById('badge-notif-diagnosis'),
+      document.getElementById('badge-notif-purchases'),
+      document.getElementById('badge-notif-payment-history'),
+      document.getElementById('badge-notif-chef-detail'),
+      document.getElementById('badge-notif-membership-plans'),
+      document.getElementById('badge-notif-membership-detail'),
+      document.getElementById('badge-notif-notifications'),
+    ];
+    notificationBadges.forEach(badge => {
+      if (badge) {
+        badge.classList.toggle('visible', notificationCount > 0);
       }
     });
   },
