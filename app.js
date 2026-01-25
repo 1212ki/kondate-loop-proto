@@ -34,6 +34,8 @@ const App = {
     },
     paymentMethod: null,   // {brand, last4}
     purchasedSets: [],     // 購入済みセットのID
+    purchasedRecipeIds: [], // 購入済みレシピID
+    purchasedPublicSetIds: [], // 購入済み公開セットID
     membershipCount: 0,    // メンバーシップ加入数（ユーザー向け）
     sampleDataSeeded: false,
     subscriptionStatus: 'inactive', // paidの場合の状態
@@ -93,6 +95,7 @@ const App = {
       emoji: '🍗',
       servings: 2,
       tags: ['和食', '定番', '鶏肉'],
+      price: 100,
       ingredients: [
         { name: '鶏もも肉', amount: 300, unit: 'g' },
         { name: '醤油', amount: 2, unit: '大さじ' },
@@ -114,6 +117,7 @@ const App = {
       emoji: '🥔',
       servings: 2,
       tags: ['和食', '定番', '煮物'],
+      price: 100,
       ingredients: [
         { name: '牛こま肉', amount: 150, unit: 'g' },
         { name: 'じゃがいも', amount: 2, unit: '個' },
@@ -135,6 +139,8 @@ const App = {
       emoji: '🌶️',
       servings: 2,
       tags: ['中華', '定番', '時短'],
+      price: 100,
+      membership: true,
       ingredients: [
         { name: '絹豆腐', amount: 1, unit: '丁' },
         { name: '豚ひき肉', amount: 100, unit: 'g' },
@@ -176,6 +182,7 @@ const App = {
       emoji: '🍚',
       servings: 2,
       tags: ['和食', '丼', '時短'],
+      price: 100,
       ingredients: [
         { name: '鶏もも肉', amount: 150, unit: 'g' },
         { name: '玉ねぎ', amount: 0.5, unit: '個' },
@@ -220,6 +227,7 @@ const App = {
       emoji: '🥬',
       servings: 2,
       tags: ['中華', '時短', '野菜'],
+      price: 100,
       ingredients: [
         { name: '豚バラ肉', amount: 100, unit: 'g' },
         { name: 'キャベツ', amount: 200, unit: 'g' },
@@ -323,6 +331,7 @@ const App = {
       author: '田中シェフ',
       recipeIds: ['pub-001', 'pub-004', 'pub-005', 'pub-006', 'pub-008'],
       tags: ['時短', '平日'],
+      price: 500,
     },
     {
       id: 'chef-002',
@@ -337,6 +346,7 @@ const App = {
       author: '野菜ソムリエYuki',
       recipeIds: ['pub-003', 'pub-008', 'pub-007'],
       tags: ['野菜', 'ヘルシー'],
+      price: 500,
     },
   ],
 
@@ -383,6 +393,87 @@ const App = {
     // ユーザーのレシピから検索
     recipe = this.state.recipes.find(r => r.id === recipeId);
     return recipe || null;
+  },
+
+  formatPrice(price) {
+    return `¥${price}`;
+  },
+
+  formatPurchaseDate(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+  },
+
+  isRecipeSaved(recipe) {
+    return this.state.recipes.some(r => r.name === recipe.name);
+  },
+
+  getRecipeAccessInfo(recipe) {
+    const price = Number(recipe.price || 0);
+    const isMembership = !!recipe.membership;
+    const isMember = this.state.membershipCount > 0;
+    const purchased = this.state.purchasedRecipeIds.includes(recipe.id);
+    const free = price <= 0;
+    const accessible = free || purchased || (isMembership && isMember);
+    let status = 'free';
+    if (purchased) {
+      status = 'purchased';
+    } else if (isMembership && isMember) {
+      status = 'membership';
+    } else if (price > 0) {
+      status = 'paid';
+    }
+    return {
+      price,
+      isMembership,
+      isMember,
+      purchased,
+      free,
+      accessible,
+      status,
+    };
+  },
+
+  getSetAccessInfo(set) {
+    const price = Number(set.price || 0);
+    const purchased = this.state.purchasedPublicSetIds.includes(set.id);
+    const free = price <= 0;
+    const accessible = free || purchased;
+    let status = 'free';
+    if (purchased) {
+      status = 'purchased';
+    } else if (price > 0) {
+      status = 'paid';
+    }
+    return {
+      price,
+      purchased,
+      free,
+      accessible,
+      status,
+    };
+  },
+
+  buildAccessBadge(access) {
+    if (access.status === 'purchased') {
+      return '<span class="badge badge-owned">購入済み</span>';
+    }
+    if (access.status === 'membership') {
+      return '<span class="badge badge-member">メンバーシップ</span>';
+    }
+    if (access.status === 'paid') {
+      return `<span class="badge badge-paid">${this.formatPrice(access.price)}</span>`;
+    }
+    return '<span class="badge badge-free">フリー</span>';
+  },
+
+  buildMembershipBadge(access) {
+    if (access.isMembership && access.status !== 'membership') {
+      return '<span class="badge badge-member-sub">メンバーシップ</span>';
+    }
+    return '';
   },
 
   normalizeText(text) {
@@ -631,6 +722,8 @@ const App = {
     if (!Array.isArray(this.state.fridge)) this.state.fridge = [];
     if (!Array.isArray(this.state.deletedFridgeItems)) this.state.deletedFridgeItems = [];
     if (!Array.isArray(this.state.purchasedSets)) this.state.purchasedSets = [];
+    if (!Array.isArray(this.state.purchasedRecipeIds)) this.state.purchasedRecipeIds = [];
+    if (!Array.isArray(this.state.purchasedPublicSetIds)) this.state.purchasedPublicSetIds = [];
     if (typeof this.state.membershipCount !== 'number') this.state.membershipCount = 0;
     if (!this.state.profile) {
       this.state.profile = { name: 'あなた', avatar: '🙂' };
@@ -669,6 +762,12 @@ const App = {
           { name: '冬のごちそう7レシピ', purchasedAt: '2026/01/24' },
         ];
       }
+      if (this.state.purchasedRecipeIds.length === 0) {
+        this.state.purchasedRecipeIds = ['pub-002'];
+      }
+      if (this.state.purchasedPublicSetIds.length === 0) {
+        this.state.purchasedPublicSetIds = ['chef-003'];
+      }
       if (this.state.accountType === 'user' && this.state.membershipCount === 0) {
         this.state.membershipCount = 1;
       }
@@ -694,6 +793,8 @@ const App = {
       creatorProfile: this.state.creatorProfile,
       paymentMethod: this.state.paymentMethod,
       purchasedSets: this.state.purchasedSets,
+      purchasedRecipeIds: this.state.purchasedRecipeIds,
+      purchasedPublicSetIds: this.state.purchasedPublicSetIds,
       membershipCount: this.state.membershipCount,
       sampleDataSeeded: this.state.sampleDataSeeded,
       subscriptionStatus: this.state.subscriptionStatus,
@@ -2112,6 +2213,8 @@ const App = {
           const recipes = this.getRecipesFromSet(set);
           const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
           const tags = (set.tags || []).join(' ');
+          const access = this.getSetAccessInfo(set);
+          const badges = this.buildAccessBadge(access);
           return `
             <div class="set-card" onclick="App.selectSet('${set.id}')">
               <div class="set-card-header">
@@ -2123,6 +2226,7 @@ const App = {
                 <span>${set.author || 'みんなの献立'}</span>
                 ${tags ? `<span class="set-card-tags">${tags}</span>` : ''}
               </div>
+              <div class="set-card-badges">${badges}</div>
               <div class="set-card-preview">
                 <span class="set-card-preview-item">${previewNames}${recipes.length > 3 ? '...' : ''}</span>
               </div>
@@ -2198,6 +2302,14 @@ const App = {
     }
 
     if (set) {
+      if (isPublic) {
+        const access = this.getSetAccessInfo(set);
+        if (!access.accessible) {
+          this.showToast('購入すると使えるよ');
+          return;
+        }
+      }
+
       const selectedSet = isPublic
         ? { ...set, id: `temp-${set.id}` }
         : set;
@@ -3176,41 +3288,77 @@ const App = {
     }
     if (!recipe) return;
 
+    const access = this.getRecipeAccessInfo(recipe);
+    const showAccessBadges = recipe.id.startsWith('pub-');
+    const badges = showAccessBadges
+      ? `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`
+      : '';
+    const isSaved = this.isRecipeSaved(recipe);
     const modal = document.getElementById('modal-recipe-detail');
     document.getElementById('detail-recipe-name').textContent = recipe.name;
 
     const body = document.getElementById('detail-recipe-body');
-    body.innerHTML = `
-      <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
-      <div style="margin-bottom: 16px;">
-        <strong>${recipe.servings}人前</strong>
-        <span style="margin-left: 8px; color: var(--text-hint);">${(recipe.tags || []).join(' ')}</span>
-      </div>
-      ${recipe.url ? `<a href="${recipe.url}" target="_blank" style="color: var(--accent); display: block; margin-bottom: 16px;">レシピページを開く →</a>` : ''}
-      <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">材料</h3>
-      <ul style="list-style: none; margin-bottom: 24px;">
-        ${(recipe.ingredients || []).map(ing => `
-          <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
-            ${ing.name} ${ing.amount}${ing.unit}
-          </li>
-        `).join('')}
-      </ul>
-      ${(recipe.steps && recipe.steps.length > 0) ? `
-        <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">手順</h3>
-        <ol style="margin-bottom: 24px; padding-left: 20px;">
-          ${recipe.steps.map(step => `
+    if (!access.accessible) {
+      const membershipNote = access.isMembership ? 'メンバーシップでも見放題' : '';
+      body.innerHTML = `
+        <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
+        ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+        <div style="margin-top: 16px; color: var(--text-sub);">
+          購入するとレシピの中身が見られるよ
+        </div>
+        ${membershipNote ? `<p style="margin-top: 8px; font-size: 12px; color: var(--text-hint);">${membershipNote}</p>` : ''}
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+          <button class="btn-primary" style="width: 100%;" onclick="App.purchasePublicRecipe('${recipe.id}')">
+            購入する ${this.formatPrice(access.price)}
+          </button>
+          <p style="font-size: 12px; color: var(--text-hint); text-align: center;">購入後に「保存」でレシピ帳へ</p>
+        </div>
+      `;
+    } else {
+      body.innerHTML = `
+        <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
+        ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+        <div style="margin-top: 16px; margin-bottom: 16px;">
+          <strong>${recipe.servings}人前</strong>
+          <span style="margin-left: 8px; color: var(--text-hint);">${(recipe.tags || []).join(' ')}</span>
+        </div>
+        ${recipe.url ? `<a href="${recipe.url}" target="_blank" style="color: var(--accent); display: block; margin-bottom: 16px;">レシピページを開く →</a>` : ''}
+        <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">材料</h3>
+        <ul style="list-style: none; margin-bottom: 24px;">
+          ${(recipe.ingredients || []).map(ing => `
             <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
-              ${step}
+              ${ing.name} ${ing.amount}${ing.unit}
             </li>
           `).join('')}
-        </ol>
-      ` : ''}
-      ${recipe.id.startsWith('recipe-') ? `
-        <button class="btn-text" style="color: red; margin-top: 24px;" onclick="App.deleteRecipe('${recipe.id}')">
-          このレシピを削除
-        </button>
-      ` : ''}
-    `;
+        </ul>
+        ${(recipe.steps && recipe.steps.length > 0) ? `
+          <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">手順</h3>
+          <ol style="margin-bottom: 24px; padding-left: 20px;">
+            ${recipe.steps.map(step => `
+              <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                ${step}
+              </li>
+            `).join('')}
+          </ol>
+        ` : ''}
+        ${recipe.id.startsWith('pub-') ? `
+          <div style="margin-top: 16px;">
+            ${isSaved ? `
+              <button class="btn-secondary" style="width: 100%;" disabled>保存済み</button>
+            ` : `
+              <button class="btn-secondary" style="width: 100%;" onclick="App.addPublicRecipeToMine('${recipe.id}')">
+                レシピ帳に保存
+              </button>
+            `}
+          </div>
+        ` : ''}
+        ${recipe.id.startsWith('recipe-') ? `
+          <button class="btn-text" style="color: red; margin-top: 24px;" onclick="App.deleteRecipe('${recipe.id}')">
+            このレシピを削除
+          </button>
+        ` : ''}
+      `;
+    }
 
     modal.classList.remove('hidden');
   },
@@ -3235,6 +3383,13 @@ const App = {
     }
     if (!recipe) return;
 
+    const access = this.getRecipeAccessInfo(recipe);
+    const showAccessBadges = recipe.id.startsWith('pub-');
+    const badges = showAccessBadges
+      ? `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`
+      : '';
+    const isSaved = this.isRecipeSaved(recipe);
+
     // セット詳細モーダルを閉じる
     document.getElementById('modal-set-detail').classList.add('hidden');
 
@@ -3242,36 +3397,69 @@ const App = {
     document.getElementById('detail-recipe-name').textContent = recipe.name;
 
     const body = document.getElementById('detail-recipe-body');
-    body.innerHTML = `
-      <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
-      <div style="margin-bottom: 16px;">
-        <strong>${recipe.servings}人前</strong>
-        <span style="margin-left: 8px; color: var(--text-hint);">${(recipe.tags || []).join(' ')}</span>
-      </div>
-      ${recipe.url ? `<a href="${recipe.url}" target="_blank" style="color: var(--accent); display: block; margin-bottom: 16px;">レシピページを開く →</a>` : ''}
-      <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">材料</h3>
-      <ul style="list-style: none; margin-bottom: 24px;">
-        ${(recipe.ingredients || []).map(ing => `
-          <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
-            ${ing.name} ${ing.amount}${ing.unit}
-          </li>
-        `).join('')}
-      </ul>
-      ${(recipe.steps && recipe.steps.length > 0) ? `
-        <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">手順</h3>
-        <ol style="margin-bottom: 24px; padding-left: 20px;">
-          ${recipe.steps.map(step => `
+    if (!access.accessible) {
+      const membershipNote = access.isMembership ? 'メンバーシップでも見放題' : '';
+      body.innerHTML = `
+        <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
+        ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+        <div style="margin-top: 16px; color: var(--text-sub);">
+          購入するとレシピの中身が見られるよ
+        </div>
+        ${membershipNote ? `<p style="margin-top: 8px; font-size: 12px; color: var(--text-hint);">${membershipNote}</p>` : ''}
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+          <button class="btn-primary" style="width: 100%;" onclick="App.purchasePublicRecipe('${recipe.id}')">
+            購入する ${this.formatPrice(access.price)}
+          </button>
+        </div>
+        <button class="btn-secondary" style="width: 100%; margin-top: 16px;" onclick="App.backToSetDetail()">
+          <span class="material-icons-round">arrow_back</span>
+          セット詳細に戻る
+        </button>
+      `;
+    } else {
+      body.innerHTML = `
+        <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">${recipe.emoji || '🍽️'}</div>
+        ${showAccessBadges ? `<div class="detail-badges">${badges}</div>` : ''}
+        <div style="margin-top: 16px; margin-bottom: 16px;">
+          <strong>${recipe.servings}人前</strong>
+          <span style="margin-left: 8px; color: var(--text-hint);">${(recipe.tags || []).join(' ')}</span>
+        </div>
+        ${recipe.url ? `<a href="${recipe.url}" target="_blank" style="color: var(--accent); display: block; margin-bottom: 16px;">レシピページを開く →</a>` : ''}
+        <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">材料</h3>
+        <ul style="list-style: none; margin-bottom: 24px;">
+          ${(recipe.ingredients || []).map(ing => `
             <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
-              ${step}
+              ${ing.name} ${ing.amount}${ing.unit}
             </li>
           `).join('')}
-        </ol>
-      ` : ''}
-      <button class="btn-secondary" style="width: 100%; margin-top: 16px;" onclick="App.backToSetDetail()">
-        <span class="material-icons-round">arrow_back</span>
-        セット詳細に戻る
-      </button>
-    `;
+        </ul>
+        ${(recipe.steps && recipe.steps.length > 0) ? `
+          <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">手順</h3>
+          <ol style="margin-bottom: 24px; padding-left: 20px;">
+            ${recipe.steps.map(step => `
+              <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                ${step}
+              </li>
+            `).join('')}
+          </ol>
+        ` : ''}
+        ${recipe.id.startsWith('pub-') ? `
+          <div style="margin-top: 16px;">
+            ${isSaved ? `
+              <button class="btn-secondary" style="width: 100%;" disabled>保存済み</button>
+            ` : `
+              <button class="btn-secondary" style="width: 100%;" onclick="App.addPublicRecipeToMine('${recipe.id}')">
+                レシピ帳に保存
+              </button>
+            `}
+          </div>
+        ` : ''}
+        <button class="btn-secondary" style="width: 100%; margin-top: 16px;" onclick="App.backToSetDetail()">
+          <span class="material-icons-round">arrow_back</span>
+          セット詳細に戻る
+        </button>
+      `;
+    }
 
     modal.classList.remove('hidden');
   },
@@ -3403,18 +3591,45 @@ const App = {
   renderPublicRecipes() {
     const list = document.getElementById('public-recipe-list');
 
-    list.innerHTML = this.publicRecipes.map(recipe => `
-      <div class="recipe-list-item" onclick="App.showRecipeDetail('${recipe.id}')">
-        <span class="recipe-list-emoji">${recipe.emoji || '🍽️'}</span>
-        <div class="recipe-list-info">
-          <div class="recipe-list-name">${recipe.name}</div>
-          <div class="recipe-list-meta">${(recipe.tags || []).join(' ')}</div>
+    list.innerHTML = this.publicRecipes.map(recipe => {
+      const access = this.getRecipeAccessInfo(recipe);
+      const badges = `${this.buildAccessBadge(access)}${this.buildMembershipBadge(access)}`;
+      const isSaved = this.isRecipeSaved(recipe);
+      let actionHtml = '';
+      if (!access.accessible) {
+        actionHtml = `
+          <button class="btn-mini btn-mini-primary" onclick="event.stopPropagation(); App.purchasePublicRecipe('${recipe.id}')">
+            購入 ${this.formatPrice(access.price)}
+          </button>
+        `;
+      } else if (isSaved) {
+        actionHtml = `
+          <button class="btn-mini btn-mini-ghost" disabled>
+            保存済み
+          </button>
+        `;
+      } else {
+        actionHtml = `
+          <button class="btn-mini" onclick="event.stopPropagation(); App.addPublicRecipeToMine('${recipe.id}')">
+            保存
+          </button>
+        `;
+      }
+
+      return `
+        <div class="recipe-list-item" onclick="App.handlePublicRecipeClick('${recipe.id}')">
+          <span class="recipe-list-emoji">${recipe.emoji || '🍽️'}</span>
+          <div class="recipe-list-info">
+            <div class="recipe-list-name">${recipe.name}</div>
+            <div class="recipe-list-meta">${(recipe.tags || []).join(' ')}</div>
+            <div class="recipe-list-badges">${badges}</div>
+          </div>
+          <div class="recipe-list-actions">
+            ${actionHtml}
+          </div>
         </div>
-        <button class="btn-text" onclick="event.stopPropagation(); App.addPublicRecipeToMine('${recipe.id}')">
-          保存
-        </button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   },
 
   renderPublicSets() {
@@ -3423,6 +3638,25 @@ const App = {
     list.innerHTML = this.publicSets.map(set => {
       const recipes = this.getRecipesFromSet(set);
       const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
+      const access = this.getSetAccessInfo(set);
+      const badges = this.buildAccessBadge(access);
+      const actionHtml = access.accessible
+        ? `
+          <button class="btn-use-set" onclick="event.stopPropagation(); App.usePublicSetAsKondate('${set.id}')">
+            <span class="material-icons-round">add</span>
+            登録
+          </button>
+          <button class="btn-save-set" onclick="event.stopPropagation(); App.savePublicSet('${set.id}')">
+            <span class="material-icons-round">bookmark_border</span>
+            保存
+          </button>
+        `
+        : `
+          <button class="btn-use-set" onclick="event.stopPropagation(); App.purchasePublicSet('${set.id}')">
+            <span class="material-icons-round">shopping_bag</span>
+            購入 ${this.formatPrice(access.price)}
+          </button>
+        `;
       return `
         <div class="public-set-card" onclick="App.showPublicSetDetail('${set.id}')">
           <div class="public-set-header">
@@ -3432,18 +3666,12 @@ const App = {
               ${set.author}
             </span>
           </div>
+          <div class="public-set-badges">${badges}</div>
           <div class="public-set-preview">${previewNames}${recipes.length > 3 ? '...' : ''}</div>
           <div class="public-set-meta">
             <span class="public-set-count">${recipes.length}品</span>
             <div class="public-set-actions-inline">
-              <button class="btn-use-set" onclick="event.stopPropagation(); App.usePublicSetAsKondate('${set.id}')">
-                <span class="material-icons-round">add</span>
-                登録
-              </button>
-              <button class="btn-save-set" onclick="event.stopPropagation(); App.savePublicSet('${set.id}')">
-                <span class="material-icons-round">bookmark_border</span>
-                保存
-              </button>
+              ${actionHtml}
             </div>
           </div>
         </div>
@@ -3497,9 +3725,80 @@ const App = {
     this.filterPublicItems();
   },
 
+  handlePublicRecipeClick(recipeId) {
+    const recipe = this.publicRecipes.find(r => r.id === recipeId);
+    if (!recipe) return;
+
+    const access = this.getRecipeAccessInfo(recipe);
+    if (!access.accessible) {
+      this.showRecipeDetail(recipeId);
+      return;
+    }
+
+    this.showRecipeDetail(recipeId);
+  },
+
+  purchasePublicRecipe(recipeId) {
+    const recipe = this.publicRecipes.find(r => r.id === recipeId);
+    if (!recipe) return;
+
+    const access = this.getRecipeAccessInfo(recipe);
+    if (access.status === 'membership') {
+      this.showToast('メンバーシップで見られるよ');
+      return;
+    }
+    if (access.free) {
+      this.showToast('フリーのレシピだよ');
+      return;
+    }
+
+    if (!this.state.purchasedRecipeIds.includes(recipeId)) {
+      this.state.purchasedRecipeIds.push(recipeId);
+      this.saveState();
+    }
+    this.showToast('購入しました');
+    this.renderPublicRecipes();
+    const modal = document.getElementById('modal-recipe-detail');
+    if (modal && !modal.classList.contains('hidden')) {
+      this.showRecipeDetail(recipeId);
+    }
+  },
+
+  purchasePublicSet(setId) {
+    const set = this.publicSets.find(s => s.id === setId);
+    if (!set) return;
+
+    const access = this.getSetAccessInfo(set);
+    if (access.free) {
+      this.showToast('フリーのセットだよ');
+      return;
+    }
+
+    if (!this.state.purchasedPublicSetIds.includes(setId)) {
+      this.state.purchasedPublicSetIds.push(setId);
+      this.state.purchasedSets.push({
+        name: set.name,
+        purchasedAt: this.formatPurchaseDate(),
+      });
+      this.saveState();
+    }
+    this.showToast('セットを購入しました');
+    this.renderPublicSets();
+    const modal = document.getElementById('modal-set-detail');
+    if (modal && !modal.classList.contains('hidden')) {
+      this.showPublicSetDetail(setId);
+    }
+  },
+
   addPublicRecipeToMine(recipeId) {
     const recipe = this.publicRecipes.find(r => r.id === recipeId);
     if (!recipe) return;
+
+    const access = this.getRecipeAccessInfo(recipe);
+    if (!access.accessible) {
+      this.showToast('購入すると保存できるよ');
+      return;
+    }
 
     // 既に追加済みかチェック
     if (this.state.recipes.some(r => r.name === recipe.name)) {
@@ -3515,11 +3814,18 @@ const App = {
     this.state.recipes.push(newRecipe);
     this.saveState();
     this.showToast('レシピを保存しました');
+    this.renderPublicRecipes();
   },
 
   savePublicSet(setId) {
     const set = this.publicSets.find(s => s.id === setId);
     if (!set) return;
+
+    const access = this.getSetAccessInfo(set);
+    if (!access.accessible) {
+      this.showToast('購入すると保存できるよ');
+      return;
+    }
 
     // 既に保存済みかチェック
     if (this.state.sets.some(s => s.name === set.name)) {
@@ -3543,6 +3849,8 @@ const App = {
     if (!set) return;
 
     const recipes = this.getRecipesFromSet(set);
+    const access = this.getSetAccessInfo(set);
+    const badges = this.buildAccessBadge(access);
 
     const modal = document.getElementById('modal-set-detail');
     document.getElementById('detail-set-name').textContent = set.name;
@@ -3552,6 +3860,9 @@ const App = {
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: var(--text-sub);">
         <span class="material-icons-round" style="font-size: 18px;">person</span>
         ${set.author}
+      </div>
+      <div class="detail-badges" style="margin-bottom: 12px;">
+        ${badges}
       </div>
       <div style="margin-bottom: 16px; color: var(--text-hint);">
         ${(set.tags || []).join(' ')}
@@ -3573,14 +3884,22 @@ const App = {
         <div class="scroll-hint"></div>
       </div>
       <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px;">
-        <button class="btn-primary" style="width: 100%;" onclick="App.usePublicSetAsKondate('${set.id}')">
-          <span class="material-icons-round">calendar_today</span>
-          献立表に登録する
-        </button>
-        <button class="btn-secondary" style="width: 100%;" onclick="App.savePublicSet('${set.id}'); App.closeModal();">
-          <span class="material-icons-round">bookmark_border</span>
-          わたしのセットに保存
-        </button>
+        ${access.accessible ? `
+          <button class="btn-primary" style="width: 100%;" onclick="App.usePublicSetAsKondate('${set.id}')">
+            <span class="material-icons-round">calendar_today</span>
+            献立表に登録する
+          </button>
+          <button class="btn-secondary" style="width: 100%;" onclick="App.savePublicSet('${set.id}'); App.closeModal();">
+            <span class="material-icons-round">bookmark_border</span>
+            わたしのセットに保存
+          </button>
+        ` : `
+          <button class="btn-primary" style="width: 100%;" onclick="App.purchasePublicSet('${set.id}')">
+            <span class="material-icons-round">shopping_bag</span>
+            購入して使う ${this.formatPrice(access.price)}
+          </button>
+          <p style="font-size: 12px; color: var(--text-hint); text-align: center;">購入すると献立表に登録できます</p>
+        `}
       </div>
     `;
 
@@ -3591,6 +3910,12 @@ const App = {
     // 公開セットを直接献立として使用
     const set = this.publicSets.find(s => s.id === setId);
     if (!set) return;
+
+    const access = this.getSetAccessInfo(set);
+    if (!access.accessible) {
+      this.showToast('購入すると使えるよ');
+      return;
+    }
 
     // セットを現在の献立に設定
     this.state.currentSet = {

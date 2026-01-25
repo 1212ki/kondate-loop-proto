@@ -691,6 +691,45 @@ input {
   opacity: 0.7;
 }
 
+.btn-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sub);
+  background-color: var(--bg-card);
+  white-space: nowrap;
+}
+
+.btn-mini-primary {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.btn-mini-ghost {
+  background-color: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-hint);
+}
+
+.btn-mini:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-secondary:disabled {
+  border-color: var(--border);
+  color: var(--text-hint);
+  background-color: var(--bg-subtle);
+  cursor: not-allowed;
+}
+
 /* ----------------------------------------
    Empty State
    ---------------------------------------- */
@@ -2024,6 +2063,13 @@ input {
   color: var(--text-sub);
 }
 
+.set-card-badges {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-sm);
+}
+
 .starter-badge {
   display: inline-block;
   padding: 2px 8px;
@@ -2032,6 +2078,51 @@ input {
   font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-full);
+}
+
+/* ----------------------------------------
+   バッジ
+   ---------------------------------------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-free {
+  background-color: var(--success-light);
+  color: #3E6A45;
+}
+
+.badge-paid {
+  background-color: #FBE8D7;
+  color: #B8653B;
+}
+
+.badge-owned {
+  background-color: #E2EAF7;
+  color: #3F5C9E;
+}
+
+.badge-member {
+  background-color: #F2E7DA;
+  color: #8B5A2B;
+}
+
+.badge-member-sub {
+  background-color: #F6EFE6;
+  color: var(--text-sub);
+}
+
+.detail-badges {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-sm);
 }
 
 .create-set-prompt {
@@ -2467,6 +2558,10 @@ input {
   transition: all var(--transition-fast);
 }
 
+.public-recipe-list .recipe-list-item {
+  align-items: flex-start;
+}
+
 .recipe-list-item:hover {
   transform: translateX(4px);
 }
@@ -2477,6 +2572,10 @@ input {
 
 .recipe-list-info {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .recipe-list-name {
@@ -2489,6 +2588,20 @@ input {
 .recipe-list-meta {
   font-size: var(--text-xs);
   color: var(--text-hint);
+}
+
+.recipe-list-badges {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.recipe-list-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-xs);
+  margin-left: auto;
 }
 
 .recipe-list-action {
@@ -3126,6 +3239,13 @@ input {
 .public-set-preview {
   font-size: var(--text-sm);
   color: var(--text-sub);
+  margin-bottom: var(--space-sm);
+}
+
+.public-set-badges {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
   margin-bottom: var(--space-sm);
 }
 
