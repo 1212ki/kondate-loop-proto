@@ -1035,7 +1035,7 @@
           <p class="modal-guide-text" id="sort-context-label">レシピ帳</p>
           <div class="sort-option-list">
             <button class="sort-option" data-value="おすすめ順" onclick="App.selectSort(this.dataset.value)">おすすめ順</button>
-            <button class="sort-option" data-value="評価順" onclick="App.selectSort(this.dataset.value)">評価順</button>
+            <button class="sort-option" data-value="新着順" onclick="App.selectSort(this.dataset.value)">新着順</button>
             <button class="sort-option" data-value="人気順" onclick="App.selectSort(this.dataset.value)">人気順</button>
           </div>
         </div>
@@ -1085,10 +1085,10 @@
           </div>
 
           <div class="filter-section">
-            <div class="filter-section-title">評価</div>
+            <div class="filter-section-title">保存数</div>
             <div class="filter-chip-group">
-              <button class="filter-chip" data-group="rating" data-value="★4.0以上" onclick="App.toggleFilterChip(this)">★4.0以上</button>
-              <button class="filter-chip" data-group="rating" data-value="★4.5以上" onclick="App.toggleFilterChip(this)">★4.5以上</button>
+              <button class="filter-chip" data-group="rating" data-value="保存数トップ10" onclick="App.toggleFilterChip(this)">保存数トップ10</button>
+              <button class="filter-chip" data-group="rating" data-value="保存数トップ30" onclick="App.toggleFilterChip(this)">保存数トップ30</button>
               <button class="filter-chip" data-group="rating" data-value="新着" onclick="App.toggleFilterChip(this)">新着</button>
             </div>
           </div>
