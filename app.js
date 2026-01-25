@@ -1383,10 +1383,7 @@ const App = {
         title: '献立を完了しました！',
         description: 'おつかれさま！<br>全ての料理を作りました。<br>次の献立を選びましょう。',
         actions: `
-          <button class="btn-primary" onclick="App.closeGuide(); App.showScreen('public'); App.switchPublicTab('sets');">
-            次の献立を選ぶ
-          </button>
-          <button class="btn-text" onclick="App.closeGuide();">閉じる</button>
+          <button class="btn-primary" onclick="App.closeCompletionGuide();">閉じる</button>
         `
       }
     };
@@ -1404,6 +1401,37 @@ const App = {
 
   closeGuide() {
     document.getElementById('modal-guide').classList.add('hidden');
+  },
+
+  closeCompletionGuide() {
+    this.closeGuide();
+    this.completeCurrentSet();
+  },
+
+  completeCurrentSet() {
+    if (this.state.currentSet) {
+      if (!this.state.setHistory) {
+        this.state.setHistory = [];
+      }
+      this.state.setHistory.push({
+        set: this.state.currentSet,
+        endedAt: new Date().toISOString(),
+        cookedRecipes: [...this.state.cookedRecipes],
+      });
+    }
+
+    if (this.state.nextSet) {
+      this.state.currentSet = this.state.nextSet;
+      this.state.nextSet = null;
+    } else {
+      this.state.currentSet = null;
+    }
+    this.state.cookedRecipes = [];
+    this.state.shoppingChecked = [];
+    this.state.shoppingPurchased = [];
+    this.state.lastCompletedSetId = null;
+    this.saveState();
+    this.renderMainScreen();
   },
 
   loadState() {
