@@ -50,6 +50,7 @@
   --radius-full: 9999px;
 
   --card-media-height: 120px;
+  --set-card-media-height: 96px;
 
   /* アニメーション */
   --transition-fast: 150ms ease-out;
@@ -1980,21 +1981,49 @@ input {
   gap: var(--space-md);
 }
 
+#screen-recipes .set-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--space-md);
+}
+
+#screen-set-select .set-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--space-md);
+}
+
 .set-card {
   padding: var(--space-md);
-  padding-top: calc(var(--card-media-height) + var(--space-md));
+  padding-top: calc(var(--set-card-media-height) + var(--space-md));
   background-color: var(--bg-card);
   border-radius: var(--radius-lg);
-  box-shadow: 0 2px 8px var(--shadow);
+  box-shadow:
+    0 4px 10px var(--shadow),
+    6px 6px 0 -4px var(--bg-card),
+    6px 6px 0 -3px var(--border),
+    12px 12px 0 -8px var(--bg-card),
+    12px 12px 0 -7px var(--border);
   cursor: pointer;
   transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
 }
 
+#screen-recipes .set-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .set-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px var(--shadow);
+  box-shadow:
+    0 6px 16px var(--shadow),
+    6px 6px 0 -4px var(--bg-card),
+    6px 6px 0 -3px var(--border),
+    12px 12px 0 -8px var(--bg-card),
+    12px 12px 0 -7px var(--border);
 }
 
 .set-card::before {
@@ -2003,7 +2032,7 @@ input {
   top: 0;
   left: 0;
   right: 0;
-  height: var(--card-media-height);
+  height: var(--set-card-media-height);
   background: linear-gradient(135deg, #F9DCC8, var(--bg-subtle));
   border-bottom: 1px solid var(--border);
 }
@@ -2038,6 +2067,10 @@ input {
   display: flex;
   gap: var(--space-xs);
   overflow: hidden;
+}
+
+#screen-recipes .set-card-preview {
+  margin-top: auto;
 }
 
 .set-card-preview-item {
@@ -2605,6 +2638,99 @@ input {
 }
 
 .recipe-list-action {
+  color: var(--text-hint);
+}
+
+#screen-recipes .recipe-list,
+#screen-public .public-recipe-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--space-md);
+}
+
+#screen-recipes .recipe-list-item,
+#screen-public .recipe-list-item {
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 240px;
+  padding: var(--space-md);
+  padding-top: calc(var(--card-media-height) + var(--space-md));
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+#screen-recipes .recipe-list-item::before,
+#screen-public .recipe-list-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--card-media-height);
+  background: linear-gradient(135deg, var(--accent-light), var(--bg-subtle));
+  border-bottom: 1px solid var(--border);
+}
+
+#screen-recipes .recipe-list-item > *,
+#screen-public .recipe-list-item > * {
+  position: relative;
+  z-index: 1;
+}
+
+#screen-recipes .recipe-list-item:hover,
+#screen-public .recipe-list-item:hover {
+  transform: translateY(-4px);
+}
+
+#screen-recipes .recipe-list-emoji,
+#screen-public .recipe-list-emoji {
+  position: absolute;
+  top: calc(var(--card-media-height) - 26px);
+  left: var(--space-md);
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background-color: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 6px 12px var(--shadow);
+}
+
+#screen-recipes .recipe-list-info,
+#screen-public .recipe-list-info {
+  width: 100%;
+  padding-top: 12px;
+}
+
+#screen-recipes .recipe-list-actions,
+#screen-public .recipe-list-actions {
+  margin-top: auto;
+  width: 100%;
+  align-items: stretch;
+}
+
+#screen-recipes .recipe-list-actions .btn-mini,
+#screen-public .recipe-list-actions .btn-mini {
+  width: 100%;
+}
+
+#screen-recipes .recipe-list-action {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background-color: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
   color: var(--text-hint);
 }
 
@@ -3180,15 +3306,32 @@ input {
   gap: var(--space-md);
 }
 
+#screen-public .public-set-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--space-md);
+}
+
 .public-set-card {
   background-color: var(--bg-card);
   border-radius: var(--radius-md);
   padding: var(--space-md);
-  padding-top: calc(var(--card-media-height) + var(--space-md));
-  box-shadow: 0 2px 8px var(--shadow);
+  padding-top: calc(var(--set-card-media-height) + var(--space-md));
+  box-shadow:
+    0 4px 10px var(--shadow),
+    6px 6px 0 -4px var(--bg-card),
+    6px 6px 0 -3px var(--border),
+    12px 12px 0 -8px var(--bg-card),
+    12px 12px 0 -7px var(--border);
   transition: transform var(--transition-fast);
   position: relative;
   overflow: hidden;
+}
+
+#screen-public .public-set-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .public-set-card::before {
@@ -3197,7 +3340,7 @@ input {
   top: 0;
   left: 0;
   right: 0;
-  height: var(--card-media-height);
+  height: var(--set-card-media-height);
   background: linear-gradient(135deg, #F7E2C7, var(--bg-subtle));
   border-bottom: 1px solid var(--border);
 }
@@ -3253,6 +3396,13 @@ input {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+#screen-public .public-set-meta {
+  margin-top: auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
 }
 
 .public-set-count {
@@ -3469,6 +3619,17 @@ input {
 .public-set-actions-inline {
   display: flex;
   gap: var(--space-xs);
+}
+
+#screen-public .public-set-actions-inline {
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+#screen-public .public-set-actions-inline .btn-use-set,
+#screen-public .public-set-actions-inline .btn-save-set {
+  flex: 1 1 120px;
+  justify-content: center;
 }
 
 .btn-use-set {
