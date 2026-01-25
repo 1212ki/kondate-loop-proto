@@ -560,82 +560,68 @@
               <div class="profile-name" id="mypage-name">あなた</div>
               <div class="profile-meta" id="mypage-account-label">ユーザー</div>
             </div>
-            <button class="btn-text-small" onclick="App.showAccountTypeModal()">使い方を変える</button>
+            <button class="btn-text-small" onclick="App.showAccountTypeModal()">プランを変える</button>
           </div>
 
           <div class="section-header">
             <span class="section-label">わたしの記録</span>
             <span class="section-meta" id="mypage-record-note"></span>
           </div>
-          <div class="mypage-summary">
-            <div class="mypage-summary-card">
-              <span class="summary-label">レシピ</span>
-              <span class="summary-value" id="mypage-recipe-count">0</span>
+          <div class="mypage-section-card dashboard-card">
+            <div class="mypage-summary">
+              <div class="mypage-summary-card">
+                <span class="summary-label">レシピ</span>
+                <span class="summary-value" id="mypage-recipe-count">0</span>
+              </div>
+              <div class="mypage-summary-card">
+                <span class="summary-label">セット</span>
+                <span class="summary-value" id="mypage-set-count">0</span>
+              </div>
+              <div class="mypage-summary-card">
+                <span class="summary-label">料理した日</span>
+                <span class="summary-value" id="mypage-history-total">0</span>
+              </div>
             </div>
-            <div class="mypage-summary-card">
-              <span class="summary-label">セット</span>
-              <span class="summary-value" id="mypage-set-count">0</span>
-            </div>
-            <div class="mypage-summary-card">
-              <span class="summary-label">冷蔵庫</span>
-              <span class="summary-value" id="mypage-fridge-count">0</span>
-            </div>
-            <div class="mypage-summary-card">
-              <span class="summary-label">献立履歴</span>
-              <span class="summary-value" id="mypage-history-total">0</span>
+
+            <div class="dashboard-meta-row hidden" id="mypage-membership-row">
+              <span class="dashboard-meta-label">メンバーシップ</span>
+              <span class="dashboard-meta-value" id="mypage-membership-count"></span>
             </div>
           </div>
 
-          <div class="section-header">
-            <span class="section-label">こんだてカレンダー</span>
-            <span class="section-meta" id="mypage-history-count"></span>
-          </div>
-          <div class="calendar-card" id="mypage-history-calendar">
-            <div class="calendar-header">
-              <button class="btn-text-icon" onclick="App.shiftHistoryMonth(-1)">
-                <span class="material-icons-round">chevron_left</span>
-              </button>
-              <div class="calendar-title" id="history-month-label"></div>
-              <button class="btn-text-icon" onclick="App.shiftHistoryMonth(1)">
-                <span class="material-icons-round">chevron_right</span>
-              </button>
+          <div id="mypage-creator-panel" class="hidden">
+            <div class="section-header">
+              <span class="section-label">クリエイター実績</span>
+              <span class="section-meta">配信状況</span>
             </div>
-            <div class="calendar-weekdays">
-              <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+            <div class="mypage-section-card">
+              <p class="mypage-section-desc">
+                公開したセットの反応をまとめます。
+              </p>
+              <div class="creator-metrics">
+                <div class="creator-metric">
+                  <span class="metric-label">公開セット</span>
+                  <span class="metric-value" id="creator-public-sets">0</span>
+                </div>
+                <div class="creator-metric">
+                  <span class="metric-label">購入数</span>
+                  <span class="metric-value" id="creator-sales-count">0</span>
+                </div>
+                <div class="creator-metric">
+                  <span class="metric-label">売上</span>
+                  <span class="metric-value" id="creator-sales-amount">-</span>
+                </div>
+                <div class="creator-metric">
+                  <span class="metric-label">メンバーシップ</span>
+                  <span class="metric-value" id="creator-membership-status">未設定</span>
+                </div>
+              </div>
+              <div class="mypage-section-actions">
+                <button class="btn-secondary" onclick="App.showScreen('recipes'); App.switchMyTab('sets')">
+                  公開セットを増やす
+                </button>
+              </div>
             </div>
-            <div id="history-calendar-grid" class="calendar-grid"></div>
-          </div>
-
-          <div id="mypage-history-empty" class="empty-state hidden">
-            <div class="empty-illustration">📖</div>
-            <p class="empty-text">まだ履歴がありません</p>
-            <p class="empty-subtext">献立をリセットすると履歴に残ります</p>
-          </div>
-          <div id="mypage-history-day" class="history-day hidden">
-            <div class="history-day-header">
-              <span class="history-day-label" id="mypage-history-day-label"></span>
-              <span class="section-meta" id="mypage-history-day-count"></span>
-            </div>
-            <div id="mypage-history-list" class="history-story-list">
-              <!-- 履歴カード -->
-            </div>
-          </div>
-
-          <div class="section-header">
-            <span class="section-label">使い方のスタイル</span>
-            <span class="section-meta" id="mypage-plan-status"></span>
-          </div>
-          <div class="mypage-section-card">
-            <p class="mypage-section-desc">
-              主導権はあなた。いつでも戻せます。
-            </p>
-            <div class="account-type-chips" id="account-type-chips">
-              <button class="chip-btn" data-type="user" onclick="App.setAccountType('user')">ユーザー</button>
-              <button class="chip-btn" data-type="creator" onclick="App.setAccountType('creator')">クリエイター</button>
-              <button class="chip-btn" data-type="paid" onclick="App.setAccountType('paid')">有料クリエイター</button>
-            </div>
-            <div class="mypage-section-note" id="mypage-account-note"></div>
-            <div class="mypage-section-actions" id="mypage-account-actions"></div>
           </div>
 
           <div id="mypage-creator-profile" class="hidden">
@@ -644,6 +630,9 @@
               <span class="section-meta" id="creator-profile-status"></span>
             </div>
             <div class="mypage-section-card">
+              <p class="mypage-section-desc">
+                あなたを知ってもらうための紹介ページです。
+              </p>
               <div class="creator-profile-card">
                 <div class="creator-profile-name" id="creator-profile-name"></div>
                 <div class="creator-profile-bio" id="creator-profile-bio"></div>
@@ -654,6 +643,48 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">アーカイブ</span>
+            <span class="section-meta" id="mypage-archive-note"></span>
+          </div>
+          <div class="mypage-section-card">
+            <p class="mypage-section-desc">
+              作った日ごとのレシピを、写真とひとことでまとめて見返せます。
+            </p>
+            <div class="mypage-section-actions">
+              <button class="btn-secondary" onclick="App.showScreen('archive')">
+                アーカイブを開く
+              </button>
+            </div>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">わたしの傾向メモ</span>
+            <span class="section-meta" id="mypage-diagnosis-summary"></span>
+          </div>
+          <div class="mypage-section-card">
+            <p class="mypage-section-desc">
+              料理の履歴から、いまの好みや気分を言葉で整理できます。
+            </p>
+            <div class="mypage-section-actions">
+              <button class="btn-secondary" onclick="App.showScreen('diagnosis')">
+                診断を見にいく
+              </button>
+            </div>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">プラン</span>
+            <span class="section-meta" id="mypage-plan-status"></span>
+          </div>
+          <div class="mypage-section-card">
+            <p class="mypage-section-desc">
+              いまのプランを確認できます。
+            </p>
+            <div class="mypage-section-note" id="mypage-account-note"></div>
+            <div class="mypage-section-actions" id="mypage-account-actions"></div>
           </div>
 
           <div class="section-header">
@@ -671,76 +702,21 @@
           </div>
 
           <div class="section-header">
-            <span class="section-label">買ったセット</span>
+            <span class="section-label">購入履歴</span>
             <span class="section-meta" id="mypage-purchase-count"></span>
           </div>
           <div id="mypage-purchase-empty" class="empty-state hidden">
             <div class="empty-illustration">🎁</div>
-            <p class="empty-text">まだ買ったセットがありません</p>
+            <p class="empty-text">まだ購入履歴がありません</p>
             <p class="empty-subtext">気になるセットはレシピカタログで探せます</p>
           </div>
-          <div id="mypage-purchase-list" class="mypage-list">
-            <!-- 購入履歴 -->
+          <div id="mypage-purchase-cards" class="purchase-card-list">
+            <!-- 購入カード -->
           </div>
           <div class="mypage-section-actions">
-            <button class="btn-secondary" onclick="App.showScreen('public')">
-              レシピカタログを見る
+            <button class="btn-secondary hidden" id="mypage-purchase-more" onclick="App.showScreen('purchases')">
+              もっと見る
             </button>
-          </div>
-
-          <div class="section-header">
-            <span class="section-label">作った料理の記録</span>
-            <span class="section-meta" id="mypage-cooking-count"></span>
-          </div>
-          <div id="mypage-cooking-empty" class="empty-state hidden">
-            <div class="empty-illustration">📸</div>
-            <p class="empty-text">作った料理がまだありません</p>
-            <p class="empty-subtext">作った料理がここに残ります</p>
-          </div>
-          <div id="mypage-cooking-log" class="mypage-log-list">
-            <!-- 料理ログ -->
-          </div>
-
-          <div class="section-header">
-            <span class="section-label">わたしの傾向メモ</span>
-            <span class="section-meta" id="mypage-diagnosis-note"></span>
-          </div>
-          <div class="mypage-section-card">
-            <p class="mypage-section-desc">
-              料理の履歴から「今の好み」を診断としてまとめます。<br>
-              ボタンを押すと診断をつくります。
-            </p>
-            <div class="mypage-section-actions" id="mypage-diagnosis-actions"></div>
-            <div id="mypage-diagnosis-insights" class="diagnosis-insights"></div>
-            <div id="mypage-diagnosis-related" class="diagnosis-related"></div>
-          </div>
-
-          <div id="mypage-creator-panel" class="hidden">
-            <div class="section-header">
-              <span class="section-label">公開の記録</span>
-              <span class="section-meta">概要</span>
-            </div>
-            <div class="mypage-section-card">
-              <div class="creator-metrics">
-                <div class="creator-metric">
-                  <span class="metric-label">公開セット</span>
-                  <span class="metric-value" id="creator-public-sets">0</span>
-                </div>
-                <div class="creator-metric">
-                  <span class="metric-label">購入数</span>
-                  <span class="metric-value" id="creator-sales-count">0</span>
-                </div>
-                <div class="creator-metric">
-                  <span class="metric-label">売上</span>
-                  <span class="metric-value" id="creator-sales-amount">-</span>
-                </div>
-              </div>
-              <div class="mypage-section-actions">
-                <button class="btn-secondary" onclick="App.showCreatorProfileModal()">
-                  公開プロフィールを整える
-                </button>
-              </div>
-            </div>
           </div>
 
           <div class="section-header">
@@ -777,6 +753,123 @@
           <span class="nav-label">マイページ</span>
         </button>
       </nav>
+    </div>
+
+    <!-- 8. アーカイブ -->
+    <div id="screen-archive" class="screen">
+      <header class="header header-sub">
+        <button class="header-back" onclick="App.goBack('mypage')">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <div class="header-logo">
+          <span class="logo-icon">🍽️</span>
+          <span class="logo-text">kondate loop</span>
+        </div>
+      </header>
+
+      <main class="main-content with-header">
+        <h2 class="screen-title">アーカイブ</h2>
+        <p class="section-description">作った日ごとのレシピをまとめて見返せます。</p>
+
+        <div class="section-header">
+          <span class="section-label">料理カレンダー</span>
+          <span class="section-meta" id="mypage-history-count"></span>
+        </div>
+        <div class="calendar-card" id="mypage-history-calendar">
+          <div class="calendar-header">
+            <button class="btn-text-icon" onclick="App.shiftHistoryMonth(-1)">
+              <span class="material-icons-round">chevron_left</span>
+            </button>
+            <div class="calendar-title" id="history-month-label"></div>
+            <button class="btn-text-icon" onclick="App.shiftHistoryMonth(1)">
+              <span class="material-icons-round">chevron_right</span>
+            </button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+          </div>
+          <div id="history-calendar-grid" class="calendar-grid"></div>
+        </div>
+
+        <div id="mypage-history-empty" class="empty-state hidden">
+          <div class="empty-illustration">📖</div>
+          <p class="empty-text">料理の記録がまだありません</p>
+          <p class="empty-subtext">作った日がカレンダーに残ります</p>
+        </div>
+        <div id="mypage-history-day" class="history-day hidden">
+          <div class="history-day-header">
+            <span class="history-day-label" id="mypage-history-day-label"></span>
+            <span class="section-meta" id="mypage-history-day-count"></span>
+          </div>
+          <div id="mypage-history-list" class="history-story-list">
+            <!-- 履歴カード -->
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 9. 診断 -->
+    <div id="screen-diagnosis" class="screen">
+      <header class="header header-sub">
+        <button class="header-back" onclick="App.goBack('mypage')">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <div class="header-logo">
+          <span class="logo-icon">🍽️</span>
+          <span class="logo-text">kondate loop</span>
+        </div>
+      </header>
+
+      <main class="main-content with-header">
+        <h2 class="screen-title">わたしの傾向メモ</h2>
+        <p class="section-description">料理の履歴から、いまの好みを言葉にします。</p>
+
+        <div class="section-header">
+          <span class="section-label">診断</span>
+          <span class="section-meta" id="mypage-diagnosis-note"></span>
+        </div>
+        <div class="mypage-section-card">
+          <p class="mypage-section-desc">
+            料理の履歴から「今の好み」を診断としてまとめます。<br>
+            ボタンを押すと診断をつくります。
+          </p>
+          <div class="mypage-section-actions" id="mypage-diagnosis-actions"></div>
+          <div id="mypage-diagnosis-insights" class="diagnosis-insights"></div>
+          <div id="mypage-diagnosis-related" class="diagnosis-related"></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 10. 購入履歴 -->
+    <div id="screen-purchases" class="screen">
+      <header class="header header-sub">
+        <button class="header-back" onclick="App.goBack('mypage')">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <div class="header-logo">
+          <span class="logo-icon">🍽️</span>
+          <span class="logo-text">kondate loop</span>
+        </div>
+      </header>
+
+      <main class="main-content with-header">
+        <h2 class="screen-title">購入履歴</h2>
+        <p class="section-description">購入したセットを一覧で見返せます。</p>
+
+        <div id="purchase-empty-full" class="empty-state hidden">
+          <div class="empty-illustration">🎁</div>
+          <p class="empty-text">まだ購入履歴がありません</p>
+          <p class="empty-subtext">気になるセットはレシピカタログで探せます</p>
+        </div>
+        <div id="purchase-list-full" class="mypage-list">
+          <!-- 購入履歴一覧 -->
+        </div>
+        <div class="mypage-section-actions">
+          <button class="btn-secondary" onclick="App.showScreen('public')">
+            レシピカタログを見る
+          </button>
+        </div>
+      </main>
     </div>
 
     <!-- レシピ選択モーダル -->
@@ -834,13 +927,13 @@
       <div class="modal-backdrop" onclick="App.closeModal()"></div>
       <div class="modal-content">
         <div class="modal-header">
-          <h2 class="modal-title">使い方を選ぶ</h2>
+          <h2 class="modal-title">プランを選ぶ</h2>
           <button class="modal-close" onclick="App.closeModal()">
             <span class="material-icons-round">close</span>
           </button>
         </div>
         <div class="modal-body">
-          <p class="modal-guide-text">いつでも戻せます。無理に変える必要はありません。</p>
+          <p class="modal-guide-text">プランを上げるとお支払いの案内が表示されます。</p>
           <div class="account-type-options">
             <button class="account-type-option" onclick="App.applyAccountType('user')">
               <span>ユーザー</span>
@@ -848,11 +941,11 @@
             </button>
             <button class="account-type-option" onclick="App.applyAccountType('creator')">
               <span>クリエイター</span>
-              <span class="option-desc">セットを公開して届ける</span>
+              <span class="option-desc">セットを公開して届ける（お支払いあり）</span>
             </button>
             <button class="account-type-option" onclick="App.applyAccountType('paid')">
               <span>有料クリエイター</span>
-              <span class="option-desc">有料セットを配信する</span>
+              <span class="option-desc">有料セットを配信する（お支払いあり）</span>
             </button>
           </div>
         </div>
@@ -948,6 +1041,39 @@
         <div class="modal-footer">
           <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
           <button class="btn-primary" onclick="App.saveCreatorProfile()">保存する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 料理ログ編集モーダル -->
+    <div id="modal-cooking-log" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">料理のログ</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="cooking-log-header">
+            <div class="cooking-log-name" id="cooking-log-recipe-name"></div>
+            <div class="cooking-log-date" id="cooking-log-date"></div>
+          </div>
+          <div class="cooking-log-photo" id="cooking-log-photo-preview"></div>
+          <div class="form-group">
+            <label class="form-label">写真</label>
+            <input type="file" id="cooking-log-photo-input" class="form-input" accept="image/*" onchange="App.handleCookingLogPhoto(event)">
+            <button class="btn-text" onclick="App.clearCookingLogPhoto()">写真を外す</button>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ひとこと</label>
+            <textarea id="cooking-log-note-input" class="import-textarea" placeholder="例: 今日は味がまとまった"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App.saveCookingLog()">保存する</button>
         </div>
       </div>
     </div>

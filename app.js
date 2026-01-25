@@ -15,6 +15,7 @@ const App = {
     nextSet: null,         // 次の献立
     setHistory: [],        // 過去の献立履歴 [{set, endedAt, cookedRecipes}]
     cookedRecipes: [],     // 作った料理のID
+    cookingLogs: [],       // 料理ログ [{id, recipeId, recipeName, recipeEmoji, cookedAt, note, photoDataUrl, setId, setName}]
     shoppingChecked: [],   // チェック済み買い物アイテム
     shoppingPurchased: [], // 購入済み買い物アイテム（name-unit）
     fridge: [],            // 冷蔵庫の食材 [{name, amount, unit}]
@@ -33,6 +34,8 @@ const App = {
     },
     paymentMethod: null,   // {brand, last4}
     purchasedSets: [],     // 購入済みセットのID
+    membershipCount: 0,    // メンバーシップ加入数（ユーザー向け）
+    sampleDataSeeded: false,
     subscriptionStatus: 'inactive', // paidの場合の状態
     creatorStatus: 'not_started', // not_started / pending / approved
     diagnosis: null,       // {generatedAt, insights, topTags}
@@ -45,6 +48,8 @@ const App = {
   currentSetSelectTab: 'my',
   historyCalendarMonth: null,
   historySelectedDate: null,
+  pendingCookingLogId: null,
+  pendingCookingLogPhoto: '',
 
   // オンボーディング状態
   onboarding: {
@@ -600,9 +605,33 @@ const App = {
     if (!Array.isArray(this.state.recipes)) this.state.recipes = [];
     if (!Array.isArray(this.state.sets)) this.state.sets = [];
     if (!Array.isArray(this.state.setHistory)) this.state.setHistory = [];
+    if (!Array.isArray(this.state.cookingLogs)) {
+      this.state.cookingLogs = [];
+      const history = Array.isArray(this.state.setHistory) ? this.state.setHistory : [];
+      history.forEach((entry, entryIndex) => {
+        const cookedIds = Array.isArray(entry.cookedRecipes) && entry.cookedRecipes.length > 0
+          ? entry.cookedRecipes
+          : (entry.set?.recipeIds || []);
+        cookedIds.forEach((recipeId, recipeIndex) => {
+          const recipe = this.getRecipeById(recipeId);
+          this.state.cookingLogs.push({
+            id: `legacy-${entryIndex}-${recipeIndex}-${recipeId}`,
+            recipeId,
+            recipeName: recipe?.name || '料理',
+            recipeEmoji: recipe?.emoji || '🍽️',
+            cookedAt: entry.endedAt || new Date().toISOString(),
+            note: '',
+            photoDataUrl: '',
+            setId: entry.set?.id || '',
+            setName: entry.set?.name || '',
+          });
+        });
+      });
+    }
     if (!Array.isArray(this.state.fridge)) this.state.fridge = [];
     if (!Array.isArray(this.state.deletedFridgeItems)) this.state.deletedFridgeItems = [];
     if (!Array.isArray(this.state.purchasedSets)) this.state.purchasedSets = [];
+    if (typeof this.state.membershipCount !== 'number') this.state.membershipCount = 0;
     if (!this.state.profile) {
       this.state.profile = { name: 'あなた', avatar: '🙂' };
     }
@@ -627,6 +656,24 @@ const App = {
     if (!this.state.subscriptionStatus) this.state.subscriptionStatus = 'inactive';
     if (!this.state.creatorStatus) this.state.creatorStatus = 'not_started';
     if (!this.state.diagnosis) this.state.diagnosis = null;
+
+    if (!this.state.sampleDataSeeded) {
+      if (this.state.purchasedSets.length === 0) {
+        this.state.purchasedSets = [
+          { name: 'あったか和食7レシピ', purchasedAt: '2026/01/05' },
+          { name: '週末作り置き7レシピ', purchasedAt: '2026/01/08' },
+          { name: 'ヘルシー夜ごはん7レシピ', purchasedAt: '2026/01/11' },
+          { name: '10分でできる7レシピ', purchasedAt: '2026/01/14' },
+          { name: '野菜たっぷり7レシピ', purchasedAt: '2026/01/18' },
+          { name: 'ごはんが進む7レシピ', purchasedAt: '2026/01/21' },
+          { name: '冬のごちそう7レシピ', purchasedAt: '2026/01/24' },
+        ];
+      }
+      if (this.state.accountType === 'user' && this.state.membershipCount === 0) {
+        this.state.membershipCount = 1;
+      }
+      this.state.sampleDataSeeded = true;
+    }
   },
 
   saveState() {
@@ -637,6 +684,7 @@ const App = {
       nextSet: this.state.nextSet,
       setHistory: this.state.setHistory,
       cookedRecipes: this.state.cookedRecipes,
+      cookingLogs: this.state.cookingLogs,
       shoppingChecked: this.state.shoppingChecked,
       shoppingPurchased: this.state.shoppingPurchased,
       fridge: this.state.fridge,
@@ -646,6 +694,8 @@ const App = {
       creatorProfile: this.state.creatorProfile,
       paymentMethod: this.state.paymentMethod,
       purchasedSets: this.state.purchasedSets,
+      membershipCount: this.state.membershipCount,
+      sampleDataSeeded: this.state.sampleDataSeeded,
       subscriptionStatus: this.state.subscriptionStatus,
       creatorStatus: this.state.creatorStatus,
       diagnosis: this.state.diagnosis,
@@ -706,6 +756,15 @@ const App = {
       case 'mypage':
         this.renderMyPage();
         break;
+      case 'archive':
+        this.renderMyPageHistory();
+        break;
+      case 'diagnosis':
+        this.renderDiagnosisSection();
+        break;
+      case 'purchases':
+        this.renderPurchaseHistoryFull();
+        break;
     }
   },
 
@@ -764,13 +823,12 @@ const App = {
   renderMyPage() {
     this.renderMyPageProfile();
     this.renderMyPageSummary();
-    this.renderMyPageHistory();
+    this.renderMyPageArchiveSection();
     this.renderAccountSection();
     this.renderCreatorProfileSection();
     this.renderPaymentSection();
     this.renderPurchaseHistory();
-    this.renderCookingLog();
-    this.renderDiagnosisSection();
+    this.renderMyPageDiagnosisSummary();
     this.renderCreatorPanel();
   },
 
@@ -791,8 +849,8 @@ const App = {
     }
 
     if (recordNote) {
-      const total = Array.isArray(this.state.setHistory) ? this.state.setHistory.length : 0;
-      recordNote.textContent = total > 0 ? `これまで ${total} セット` : 'これから記録が増えていきます';
+      const totalDays = this.getCookingLogDayCount();
+      recordNote.textContent = totalDays > 0 ? `これまで ${totalDays} 日` : 'これから記録が増えていきます';
     }
   },
 
@@ -800,7 +858,7 @@ const App = {
     const recipeCount = this.state.recipes.length;
     const setCount = this.state.sets.length;
     const fridgeCount = (this.state.fridge || []).length;
-    const historyCount = Array.isArray(this.state.setHistory) ? this.state.setHistory.length : 0;
+    const historyCount = this.getCookingLogDayCount();
 
     const recipeEl = document.getElementById('mypage-recipe-count');
     const setEl = document.getElementById('mypage-set-count');
@@ -811,6 +869,87 @@ const App = {
     if (setEl) setEl.textContent = setCount;
     if (fridgeEl) fridgeEl.textContent = fridgeCount;
     if (historyEl) historyEl.textContent = historyCount;
+
+    this.renderMembershipSummary();
+  },
+
+  getCookingLogDayCount() {
+    const logs = Array.isArray(this.state.cookingLogs) ? this.state.cookingLogs : [];
+    const dayKeys = new Set();
+    logs.forEach(log => {
+      const date = new Date(log.cookedAt);
+      if (!Number.isNaN(date.getTime())) {
+        dayKeys.add(this.formatDateKey(date));
+      }
+    });
+    return dayKeys.size;
+  },
+
+  renderMembershipSummary() {
+    const row = document.getElementById('mypage-membership-row');
+    const valueEl = document.getElementById('mypage-membership-count');
+    if (!row || !valueEl) return;
+
+    if (this.state.accountType === 'user') {
+      row.classList.remove('hidden');
+      const count = Number.isFinite(this.state.membershipCount) ? this.state.membershipCount : 0;
+      valueEl.textContent = `${count}件`;
+    } else {
+      row.classList.add('hidden');
+    }
+  },
+
+  getLatestCookingLogDate() {
+    const logs = Array.isArray(this.state.cookingLogs) ? this.state.cookingLogs : [];
+    let latest = null;
+    let latestTime = 0;
+    logs.forEach(log => {
+      const date = new Date(log.cookedAt);
+      const time = date.getTime();
+      if (!Number.isNaN(time) && time > latestTime) {
+        latestTime = time;
+        latest = date;
+      }
+    });
+    return latest;
+  },
+
+  renderMyPageArchiveSection() {
+    const noteEl = document.getElementById('mypage-archive-note');
+    if (!noteEl) return;
+
+    const dayCount = this.getCookingLogDayCount();
+    if (dayCount === 0) {
+      noteEl.textContent = 'まだ記録がありません';
+      return;
+    }
+
+    const latest = this.getLatestCookingLogDate();
+    if (!latest) {
+      noteEl.textContent = `${dayCount}日分の記録`;
+      return;
+    }
+
+    const latestText = `${latest.getMonth() + 1}/${latest.getDate()} に作りました`;
+    noteEl.textContent = `${dayCount}日分 / 最新 ${latestText}`;
+  },
+
+  renderMyPageDiagnosisSummary() {
+    const summaryEl = document.getElementById('mypage-diagnosis-summary');
+    if (!summaryEl) return;
+
+    const diagnosis = this.state.diagnosis;
+    if (!diagnosis || !diagnosis.generatedAt) {
+      summaryEl.textContent = 'まだ診断がありません';
+      return;
+    }
+
+    const date = new Date(diagnosis.generatedAt);
+    if (Number.isNaN(date.getTime())) {
+      summaryEl.textContent = '診断を保存済み';
+      return;
+    }
+    summaryEl.textContent = `前回: ${date.getMonth() + 1}/${date.getDate()}`;
   },
 
   renderMyPageHistory() {
@@ -822,14 +961,14 @@ const App = {
     const monthLabel = document.getElementById('history-month-label');
     const dayWrap = document.getElementById('mypage-history-day');
     const dayLabel = document.getElementById('mypage-history-day-label');
-    const dayCount = document.getElementById('mypage-history-day-count');
+    const dayCountEl = document.getElementById('mypage-history-day-count');
 
-    if (!listEl || !emptyEl || !countEl || !calendarEl || !gridEl || !monthLabel || !dayWrap || !dayLabel || !dayCount) {
+    if (!listEl || !emptyEl || !countEl || !calendarEl || !gridEl || !monthLabel || !dayWrap || !dayLabel || !dayCountEl) {
       return;
     }
 
-    const history = Array.isArray(this.state.setHistory) ? this.state.setHistory : [];
-    if (history.length === 0) {
+    const logs = Array.isArray(this.state.cookingLogs) ? this.state.cookingLogs : [];
+    if (logs.length === 0) {
       listEl.innerHTML = '';
       emptyEl.classList.remove('hidden');
       calendarEl.classList.add('hidden');
@@ -840,9 +979,9 @@ const App = {
 
     emptyEl.classList.add('hidden');
     calendarEl.classList.remove('hidden');
-    countEl.textContent = `${history.length}件`;
-
-    const historyMap = this.buildHistoryMap(history);
+    const historyMap = this.buildHistoryMap(logs);
+    const dayCountValue = Object.keys(historyMap).length;
+    countEl.textContent = `${dayCountValue}日`;
     const latestDate = this.getLatestHistoryDate(historyMap);
 
     if (!this.historyCalendarMonth) {
@@ -858,7 +997,7 @@ const App = {
       this.historySelectedDate = latestDate;
     }
 
-    this.renderHistoryDayDetail(historyMap, listEl, dayWrap, dayLabel, dayCount);
+    this.renderHistoryDayDetail(historyMap, listEl, dayWrap, dayLabel, dayCountEl);
   },
 
   formatDateKey(date) {
@@ -868,11 +1007,11 @@ const App = {
     return `${year}-${month}-${day}`;
   },
 
-  buildHistoryMap(history) {
+  buildHistoryMap(logs) {
     const map = {};
-    history.forEach(item => {
-      if (!item || !item.endedAt) return;
-      const date = new Date(item.endedAt);
+    logs.forEach(item => {
+      if (!item || !item.cookedAt) return;
+      const date = new Date(item.cookedAt);
       if (Number.isNaN(date.getTime())) return;
       const key = this.formatDateKey(date);
       if (!map[key]) map[key] = [];
@@ -947,25 +1086,39 @@ const App = {
 
     dayWrap.classList.remove('hidden');
     dayLabel.textContent = this.historySelectedDate.replace(/-/g, '/');
-    dayCount.textContent = `${items.length}件`;
+    dayCount.textContent = `${items.length}品`;
 
-    listEl.innerHTML = items.map(item => {
-      const recipes = this.getRecipesFromSet(item.set);
-      const cookedSet = new Set(item.cookedRecipes || []);
-      const cookedRecipes = recipes.filter(r => cookedSet.has(r.id));
-      const cookedNames = cookedRecipes.length > 0 ? cookedRecipes : recipes;
-      const previewNames = cookedNames.slice(0, 3).map(r => r.name).join('・');
-      const totalRecipes = (item.set.recipeIds || []).length;
-      const cookedCount = cookedRecipes.length > 0 ? cookedRecipes.length : recipes.length;
-      const emoji = this.getHistoryItemThumbnail(item);
+    const sortedItems = items.slice().sort((a, b) => {
+      const aTime = new Date(a.cookedAt).getTime();
+      const bTime = new Date(b.cookedAt).getTime();
+      return aTime - bTime;
+    });
+
+    listEl.innerHTML = sortedItems.map(item => {
+      const recipe = this.getRecipeById(item.recipeId);
+      const name = item.recipeName || recipe?.name || '料理';
+      const emoji = item.recipeEmoji || recipe?.emoji || '🍽️';
+      const photoHtml = item.photoDataUrl
+        ? `<img class="history-log-photo" src="${item.photoDataUrl}" alt="${name}">`
+        : '';
+      const noteHtml = item.note
+        ? `<div class="history-log-note">${item.note}</div>`
+        : `<div class="history-log-empty">写真やひとことを残せます</div>`;
+      const setLabel = item.setName ? `セット: ${item.setName}` : 'セット: 単品';
+      const setHtml = `<div class="history-log-meta">${setLabel}</div>`;
       return `
-        <div class="history-story-card history-day-card">
-          <div class="history-story-thumb">${emoji}</div>
-          <div class="history-story-name">${item.set.name}</div>
-          <div class="history-story-meta">${cookedCount}/${totalRecipes}品</div>
-          <div class="history-day-recipes">作った: ${previewNames}${cookedNames.length > 3 ? '…' : ''}</div>
-          <button class="btn-text-small" onclick="App.setHistoryAsNextByDate('${this.historySelectedDate}', '${item.set.name}')">
-            次の献立にする
+        <div class="history-story-card history-log-card">
+          <div class="history-log-header">
+            <div class="history-log-emoji">${emoji}</div>
+            <div class="history-log-info">
+              <div class="history-log-name">${name}</div>
+              ${setHtml}
+            </div>
+          </div>
+          ${photoHtml}
+          ${noteHtml}
+          <button class="btn-text-small" onclick="App.showCookingLogModal('${item.id}')">
+            写真・ログを編集
           </button>
         </div>
       `;
@@ -973,7 +1126,9 @@ const App = {
   },
 
   getHistoryItemThumbnail(item) {
-    const recipe = this.getRecipesFromSet(item.set)[0];
+    if (item.photoDataUrl) return '📷';
+    if (item.recipeEmoji) return item.recipeEmoji;
+    const recipe = this.getRecipeById(item.recipeId);
     return recipe?.emoji || '🍲';
   },
 
@@ -1015,60 +1170,30 @@ const App = {
   renderAccountSection() {
     const statusEl = document.getElementById('mypage-plan-status');
     const noteEl = document.getElementById('mypage-account-note');
-    const chips = document.querySelectorAll('#account-type-chips .chip-btn');
     const actionsEl = document.getElementById('mypage-account-actions');
 
     const typeLabel = this.getAccountTypeLabel(this.state.accountType);
     if (statusEl) {
-      const subscription = this.state.accountType === 'paid'
-        ? (this.state.subscriptionStatus === 'active' ? 'サブスク中' : '停止中')
-        : '無料';
-      statusEl.textContent = `いま: ${typeLabel} / ${subscription}`;
+      if (this.state.accountType === 'paid') {
+        const subscription = this.state.subscriptionStatus === 'active' ? 'サブスク中' : '停止中';
+        statusEl.textContent = `いまのプラン: ${typeLabel} / ${subscription}`;
+      } else {
+        statusEl.textContent = `いまのプラン: ${typeLabel}`;
+      }
     }
 
     if (noteEl) {
       const creatorStatusLabel = this.getCreatorStatusLabel(this.state.creatorStatus);
-      if (this.state.accountType === 'paid') {
-        noteEl.textContent = `公開の申請: ${creatorStatusLabel} / サブスクの状態を確認できます。`;
-      } else if (this.state.accountType === 'creator') {
-        noteEl.textContent = `公開の申請: ${creatorStatusLabel} / セットを増やして届けましょう。`;
-      } else {
-        noteEl.textContent = `公開の申請: ${creatorStatusLabel} / いつでも申請できます。`;
-      }
+      noteEl.textContent = `公開の申請: ${creatorStatusLabel}`;
     }
 
     if (actionsEl) {
-      let actions = `
+      actionsEl.innerHTML = `
         <button class="btn-secondary" onclick="App.showAccountTypeModal()">
-          使い方を変える
+          プランを変える
         </button>
       `;
-      if (this.state.accountType === 'user') {
-        actions += `
-          <button class="btn-secondary" onclick="App.startCreatorRegistration()">
-            みんなに公開してみる
-          </button>
-        `;
-      } else if (this.state.accountType === 'creator') {
-        actions += `
-          <button class="btn-secondary" onclick="App.setAccountType('paid')">
-            有料セットを届ける
-          </button>
-        `;
-      } else if (this.state.accountType === 'paid') {
-        actions += `
-          <button class="btn-secondary" onclick="App.showToast('更新・解約は準備中です')">
-            サブスクを整える
-          </button>
-        `;
-      }
-      actionsEl.innerHTML = actions;
     }
-
-    chips.forEach(btn => {
-      const type = btn.dataset.type;
-      btn.classList.toggle('active', type === this.state.accountType);
-    });
   },
 
   renderCreatorProfileSection() {
@@ -1101,8 +1226,12 @@ const App = {
   },
 
   applyAccountType(type) {
+    const previous = this.state.accountType;
     this.setAccountType(type);
     this.closeModal();
+    if (type !== previous && (type === 'creator' || type === 'paid')) {
+      this.showPaymentModal();
+    }
   },
 
   setAccountType(type) {
@@ -1246,9 +1375,10 @@ const App = {
   },
 
   renderPurchaseHistory() {
-    const list = document.getElementById('mypage-purchase-list');
+    const list = document.getElementById('mypage-purchase-cards');
     const empty = document.getElementById('mypage-purchase-empty');
     const count = document.getElementById('mypage-purchase-count');
+    const moreBtn = document.getElementById('mypage-purchase-more');
 
     if (!list || !empty || !count) return;
 
@@ -1257,18 +1387,49 @@ const App = {
       list.innerHTML = '';
       empty.classList.remove('hidden');
       count.textContent = '';
+      if (moreBtn) moreBtn.classList.add('hidden');
       return;
     }
 
     empty.classList.add('hidden');
     count.textContent = `${purchases.length}件`;
 
+    const visibleItems = purchases.slice(0, 6);
+    list.innerHTML = visibleItems.map(item => {
+      const name = typeof item === 'string' ? item : item.name;
+      const purchasedAt = typeof item === 'string' ? '' : (item.purchasedAt || '日付未設定');
+      return `
+        <div class="purchase-card">
+          <div class="purchase-card-title">${name || '購入したセット'}</div>
+          <div class="purchase-card-meta">${purchasedAt}</div>
+        </div>
+      `;
+    }).join('');
+
+    if (moreBtn) {
+      moreBtn.classList.toggle('hidden', purchases.length <= 6);
+    }
+  },
+
+  renderPurchaseHistoryFull() {
+    const list = document.getElementById('purchase-list-full');
+    const empty = document.getElementById('purchase-empty-full');
+    if (!list || !empty) return;
+
+    const purchases = Array.isArray(this.state.purchasedSets) ? this.state.purchasedSets : [];
+    if (purchases.length === 0) {
+      list.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    empty.classList.add('hidden');
     list.innerHTML = purchases.map(item => {
       const name = typeof item === 'string' ? item : item.name;
       const purchasedAt = typeof item === 'string' ? '' : (item.purchasedAt || '日付未設定');
       return `
         <div class="mypage-list-item">
-          <div class="mypage-list-title">${name || '買ったセット'}</div>
+          <div class="mypage-list-title">${name || '購入したセット'}</div>
           <div class="mypage-list-meta">${purchasedAt}</div>
         </div>
       `;
@@ -1413,23 +1574,30 @@ const App = {
 
   collectHistoryRecipes() {
     const recipes = [];
-    const history = Array.isArray(this.state.setHistory) ? this.state.setHistory : [];
-
-    history.forEach(item => {
-      const cookedIds = Array.isArray(item.cookedRecipes) && item.cookedRecipes.length > 0
-        ? item.cookedRecipes
-        : (item.set.recipeIds || []);
-      cookedIds.forEach(id => {
-        const recipe = this.getRecipeById(id);
+    const logs = Array.isArray(this.state.cookingLogs) ? this.state.cookingLogs : [];
+    if (logs.length > 0) {
+      logs.forEach(item => {
+        const recipe = this.getRecipeById(item.recipeId);
         if (recipe) recipes.push(recipe);
       });
-    });
-
-    if (this.state.currentSet && Array.isArray(this.state.cookedRecipes)) {
-      this.state.cookedRecipes.forEach(id => {
-        const recipe = this.getRecipeById(id);
-        if (recipe) recipes.push(recipe);
+    } else {
+      const history = Array.isArray(this.state.setHistory) ? this.state.setHistory : [];
+      history.forEach(item => {
+        const cookedIds = Array.isArray(item.cookedRecipes) && item.cookedRecipes.length > 0
+          ? item.cookedRecipes
+          : (item.set.recipeIds || []);
+        cookedIds.forEach(id => {
+          const recipe = this.getRecipeById(id);
+          if (recipe) recipes.push(recipe);
+        });
       });
+
+      if (this.state.currentSet && Array.isArray(this.state.cookedRecipes)) {
+        this.state.cookedRecipes.forEach(id => {
+          const recipe = this.getRecipeById(id);
+          if (recipe) recipes.push(recipe);
+        });
+      }
     }
 
     return recipes;
@@ -1531,9 +1699,14 @@ const App = {
       const countEl = document.getElementById('creator-public-sets');
       const salesEl = document.getElementById('creator-sales-count');
       const amountEl = document.getElementById('creator-sales-amount');
+      const membershipEl = document.getElementById('creator-membership-status');
       if (countEl) countEl.textContent = publicCount;
       if (salesEl) salesEl.textContent = '0';
       if (amountEl) amountEl.textContent = '¥0';
+      if (membershipEl) {
+        const isActive = this.state.accountType === 'paid' && this.state.subscriptionStatus === 'active';
+        membershipEl.textContent = isActive ? '稼働中' : '未設定';
+      }
     } else {
       panel.classList.add('hidden');
     }
@@ -1651,6 +1824,115 @@ const App = {
     modal.classList.remove('hidden');
   },
 
+  addCookingLog(recipe, setContext) {
+    if (!recipe) return;
+    if (!Array.isArray(this.state.cookingLogs)) {
+      this.state.cookingLogs = [];
+    }
+    const timestamp = Date.now();
+    const rand = Math.random().toString(36).slice(2, 8);
+    this.state.cookingLogs.push({
+      id: `log-${timestamp}-${rand}`,
+      recipeId: recipe.id,
+      recipeName: recipe.name,
+      recipeEmoji: recipe.emoji || '🍽️',
+      cookedAt: new Date().toISOString(),
+      note: '',
+      photoDataUrl: '',
+      setId: setContext?.id || '',
+      setName: setContext?.name || '',
+    });
+  },
+
+  removeLatestCookingLog(recipeId) {
+    const logs = Array.isArray(this.state.cookingLogs) ? this.state.cookingLogs : [];
+    if (logs.length === 0) return;
+    const setId = this.state.currentSet?.id || '';
+    for (let i = logs.length - 1; i >= 0; i -= 1) {
+      const log = logs[i];
+      if (!log) continue;
+      if (log.recipeId !== recipeId) continue;
+      if (setId && log.setId && log.setId !== setId) continue;
+      logs.splice(i, 1);
+      break;
+    }
+  },
+
+  showCookingLogModal(logId) {
+    const log = (this.state.cookingLogs || []).find(item => item.id === logId);
+    if (!log) return;
+
+    this.pendingCookingLogId = logId;
+    this.pendingCookingLogPhoto = log.photoDataUrl || '';
+
+    const modal = document.getElementById('modal-cooking-log');
+    const nameEl = document.getElementById('cooking-log-recipe-name');
+    const dateEl = document.getElementById('cooking-log-date');
+    const noteEl = document.getElementById('cooking-log-note-input');
+    const photoWrap = document.getElementById('cooking-log-photo-preview');
+    const photoInput = document.getElementById('cooking-log-photo-input');
+
+    const cookedDate = new Date(log.cookedAt);
+    const dateText = Number.isNaN(cookedDate.getTime())
+      ? ''
+      : `${cookedDate.getMonth() + 1}/${cookedDate.getDate()} に作った`;
+
+    if (nameEl) nameEl.textContent = log.recipeName || '料理';
+    if (dateEl) dateEl.textContent = dateText;
+    if (noteEl) noteEl.value = log.note || '';
+    if (photoInput) photoInput.value = '';
+    if (photoWrap) {
+      photoWrap.innerHTML = this.pendingCookingLogPhoto
+        ? `<img src="${this.pendingCookingLogPhoto}" alt="料理の写真">`
+        : '<div class="photo-empty">写真はまだありません</div>';
+    }
+
+    if (modal) modal.classList.remove('hidden');
+  },
+
+  handleCookingLogPhoto(event) {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      this.showToast('2MB以下の写真を選んでください');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.pendingCookingLogPhoto = String(reader.result || '');
+      const photoWrap = document.getElementById('cooking-log-photo-preview');
+      if (photoWrap) {
+        photoWrap.innerHTML = `<img src="${this.pendingCookingLogPhoto}" alt="料理の写真">`;
+      }
+    };
+    reader.readAsDataURL(file);
+  },
+
+  clearCookingLogPhoto() {
+    this.pendingCookingLogPhoto = '';
+    const photoWrap = document.getElementById('cooking-log-photo-preview');
+    if (photoWrap) {
+      photoWrap.innerHTML = '<div class="photo-empty">写真はまだありません</div>';
+    }
+  },
+
+  saveCookingLog() {
+    const logId = this.pendingCookingLogId;
+    if (!logId) return;
+    const logs = Array.isArray(this.state.cookingLogs) ? this.state.cookingLogs : [];
+    const log = logs.find(item => item.id === logId);
+    if (!log) return;
+
+    const note = document.getElementById('cooking-log-note-input')?.value?.trim() || '';
+    log.note = note;
+    log.photoDataUrl = this.pendingCookingLogPhoto || '';
+
+    this.saveState();
+    this.renderMyPageHistory();
+    this.closeModal();
+    this.showToast('料理のログを保存しました');
+  },
+
   markAsCooked(recipeId) {
     const index = this.state.cookedRecipes.indexOf(recipeId);
     if (index === -1) {
@@ -1661,6 +1943,7 @@ const App = {
       }
       if (recipe) {
         this.consumeIngredientsFromFridge(recipe);
+        this.addCookingLog(recipe, this.state.currentSet);
       }
       this.state.cookedRecipes.push(recipeId);
       this.saveState();
@@ -1685,6 +1968,7 @@ const App = {
       }
     } else {
       this.state.cookedRecipes.splice(index, 1);
+      this.removeLatestCookingLog(recipeId);
       this.showToast('未調理に戻しました');
       this.saveState();
       this.closeModal();
@@ -3335,6 +3619,8 @@ const App = {
   // ========================================
   closeModal() {
     document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+    this.pendingCookingLogId = null;
+    this.pendingCookingLogPhoto = '';
   },
 
   // ========================================
