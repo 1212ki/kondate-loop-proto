@@ -196,6 +196,21 @@ input {
   height: 40px;
 }
 
+.header-help {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  font-size: var(--text-xs);
+  background: transparent;
+  transition: all var(--transition-fast);
+}
+
+.header-help:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-main);
+}
+
 .logo-icon {
   font-size: 20px;
   line-height: 1;

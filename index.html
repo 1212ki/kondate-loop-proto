@@ -46,6 +46,7 @@
         <div class="header-logo">
           <span class="logo-icon">🍽️</span>
           <span class="logo-text">kondate loop</span>
+          <button class="header-help" onclick="App.showScreen('onboarding')">使い方</button>
         </div>
         <div class="header-actions-single">
           <button class="header-action has-badge" onclick="App.showFridge()">
@@ -473,7 +474,7 @@
         <div id="shopping-actions" class="shopping-actions hidden">
           <button id="btn-purchase" class="btn-primary" onclick="App.purchaseChecked()" disabled>
             <span class="material-icons-round">done</span>
-            買った
+            買い物完了！
           </button>
         </div>
       </main>
@@ -1339,7 +1340,7 @@
           <button class="btn-secondary" onclick="App.closeModal()">閉じる</button>
           <button class="btn-primary" id="btn-reflect-fridge" onclick="App.reflectCheckedToFridge()">
             <span class="material-icons-round">check</span>
-            買った
+            買い物完了！
           </button>
         </div>
       </div>

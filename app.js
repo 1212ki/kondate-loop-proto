@@ -686,7 +686,7 @@ const App = {
         title: '買い物リストができました',
         description: 'セットに含まれる材料が<br>買い物リストに追加されました。<br>買い物に行ってみましょう！',
         actions: `
-          <button class="btn-primary" onclick="App.closeGuide(); App.showScreen('shopping');">
+          <button class="btn-primary" onclick="App.closeGuide(); App.showShoppingPopup();">
             買い物リストを見る
           </button>
           <button class="btn-text" onclick="App.closeGuide()">OK</button>
@@ -697,7 +697,7 @@ const App = {
         title: '買い物できたかな？',
         description: '買い物リストの材料を買ったら<br>「買った」ボタンを押してね。<br>冷蔵庫に追加されるよ。',
         actions: `
-          <button class="btn-primary" onclick="App.closeGuide(); App.showScreen('shopping');">
+          <button class="btn-primary" onclick="App.closeGuide(); App.showShoppingPopup();">
             買い物リストへ
           </button>
           <button class="btn-text" onclick="App.closeGuide(); App.onboarding.purchasePrompted = true; App.saveOnboarding();">あとで</button>
