@@ -18,6 +18,7 @@ const App = {
     cookingLogs: [],       // 料理ログ [{id, recipeId, recipeName, recipeEmoji, cookedAt, note, photoDataUrl, setId, setName}]
     shoppingChecked: [],   // チェック済み買い物アイテム
     shoppingPurchased: [], // 購入済み買い物アイテム（name-unit）
+    shoppingExtraItems: [], // 追加で買う食材 [{id, name, amount, unit, key}]
     fridge: [],            // 冷蔵庫の食材 [{name, amount, unit}]
     deletedFridgeItems: [], // 削除した食材履歴 [{name, amount, unit, deletedAt}]
     selectedRecipesForSet: [], // セット作成時の選択レシピ
@@ -41,6 +42,7 @@ const App = {
     subscriptionStatus: 'inactive', // paidの場合の状態
     creatorStatus: 'not_started', // not_started / pending / approved
     diagnosis: null,       // {generatedAt, insights, topTags}
+    lastCompletedSetId: null, // 直近で完了ガイドを表示したセットID
   },
 
   // UI状態（保存しない）
@@ -81,12 +83,25 @@ const App = {
         { name: '酒', amount: 2, unit: '大さじ' },
         { name: 'みりん', amount: 1, unit: '大さじ' },
       ],
+      intermediates: [
+        {
+          label: 'A',
+          name: '合わせ調味料',
+          ingredients: [
+            { name: '醤油', amount: 2, unit: '大さじ' },
+            { name: '酒', amount: 2, unit: '大さじ' },
+            { name: 'みりん', amount: 1, unit: '大さじ' },
+            { name: '生姜', amount: 1, unit: 'かけ' },
+          ],
+          steps: ['すべて混ぜておく'],
+        },
+      ],
       steps: [
-        '生姜をすりおろし、醤油・酒・みりんと混ぜてタレを作る',
+        'A（合わせ調味料）を作る：醤油・酒・みりん・生姜を混ぜる',
         '玉ねぎを薄切りにする',
         'フライパンに油を熱し、豚肉を焼く',
         '玉ねぎを加えて炒める',
-        'タレを加えて絡める',
+        'Aを加えて絡める',
       ],
     },
     {
@@ -353,6 +368,16 @@ const App = {
   // 現在のタブ状態
   currentMyTab: 'recipes',
   currentPublicTab: 'recipes',
+  currentSort: {
+    my: 'おすすめ順',
+    public: 'おすすめ順',
+  },
+  filterState: {
+    my: { status: [], time: [], tag: [], rating: [] },
+    public: { status: [], time: [], tag: [], rating: [] },
+  },
+  activeFilterContext: 'my',
+  activeSortContext: 'my',
 
   // ========================================
   // 初期化
@@ -476,6 +501,41 @@ const App = {
     return '';
   },
 
+  buildIntermediateSection(recipe) {
+    const intermediates = Array.isArray(recipe.intermediates) ? recipe.intermediates : [];
+    if (intermediates.length === 0) return '';
+
+    const items = intermediates.map((item, index) => {
+      const label = item.label ? `${item.label}` : `中間素材${index + 1}`;
+      const name = item.name ? `：${item.name}` : '';
+      const ingredientList = (item.ingredients || []).map(ing => `
+        <li style="padding: 6px 0; border-bottom: 1px dashed var(--border);">
+          ${ing.name} ${ing.amount}${ing.unit}
+        </li>
+      `).join('');
+      const steps = Array.isArray(item.steps) && item.steps.length > 0
+        ? `<div style="margin-top: 8px; font-size: 12px; color: var(--text-hint);">作り方：${item.steps.join(' / ')}</div>`
+        : '';
+
+      return `
+        <div style="padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); margin-bottom: 12px;">
+          <div style="font-weight: 600; margin-bottom: 8px;">${label}${name}</div>
+          <ul style="list-style: none;">
+            ${ingredientList}
+          </ul>
+          ${steps}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">中間素材</h3>
+      <div style="margin-bottom: 24px;">
+        ${items}
+      </div>
+    `;
+  },
+
   normalizeText(text) {
     return (text || '').toString().toLowerCase().replace(/\s+/g, '');
   },
@@ -483,7 +543,11 @@ const App = {
   getSetIngredientNames(set) {
     const names = new Set();
     this.getRecipesFromSet(set).forEach(recipe => {
-      (recipe.ingredients || []).forEach(ing => {
+      const allIngredients = [
+        ...(recipe.ingredients || []),
+        ...((recipe.intermediates || []).flatMap(item => item.ingredients || [])),
+      ];
+      allIngredients.forEach(ing => {
         const name = (ing.name || '').trim();
         if (name) names.add(name);
       });
@@ -724,6 +788,20 @@ const App = {
     if (!Array.isArray(this.state.purchasedSets)) this.state.purchasedSets = [];
     if (!Array.isArray(this.state.purchasedRecipeIds)) this.state.purchasedRecipeIds = [];
     if (!Array.isArray(this.state.purchasedPublicSetIds)) this.state.purchasedPublicSetIds = [];
+    if (!Array.isArray(this.state.shoppingExtraItems)) this.state.shoppingExtraItems = [];
+    if (!Array.isArray(this.state.shoppingChecked)) this.state.shoppingChecked = [];
+    if (!Array.isArray(this.state.shoppingPurchased)) this.state.shoppingPurchased = [];
+    if (!this.state.lastCompletedSetId) this.state.lastCompletedSetId = null;
+    this.state.shoppingExtraItems = this.state.shoppingExtraItems.map((item, index) => {
+      const id = item.id || `extra-${Date.now()}-${index}`;
+      return {
+        id,
+        name: item.name || '',
+        amount: typeof item.amount === 'number' ? item.amount : 1,
+        unit: item.unit || '',
+        key: item.key || id,
+      };
+    }).filter(item => item.name);
     if (typeof this.state.membershipCount !== 'number') this.state.membershipCount = 0;
     if (!this.state.profile) {
       this.state.profile = { name: 'あなた', avatar: '🙂' };
@@ -800,6 +878,7 @@ const App = {
       subscriptionStatus: this.state.subscriptionStatus,
       creatorStatus: this.state.creatorStatus,
       diagnosis: this.state.diagnosis,
+      lastCompletedSetId: this.state.lastCompletedSetId,
     }));
     // バッジを更新
     this.updateBadges();
@@ -895,8 +974,11 @@ const App = {
 
       // セット内のレシピを取得
       const recipes = this.getRecipesFromSet(this.state.currentSet);
+      const uncookedRecipes = recipes.filter(recipe => !this.state.cookedRecipes.includes(recipe.id));
+      const cookedRecipes = recipes.filter(recipe => this.state.cookedRecipes.includes(recipe.id));
+      const sortedRecipes = [...uncookedRecipes, ...cookedRecipes];
 
-      poolCards.innerHTML = recipes.map(recipe => {
+      poolCards.innerHTML = sortedRecipes.map(recipe => {
         const isCooked = this.state.cookedRecipes.includes(recipe.id);
         return `
           <div class="recipe-card ${isCooked ? 'cooked' : ''}" onclick="App.showRecipeFromPool('${recipe.id}')">
@@ -1907,6 +1989,7 @@ const App = {
           </li>
         `).join('')}
       </ul>
+      ${this.buildIntermediateSection(recipe)}
       ${(recipe.steps && recipe.steps.length > 0) ? `
         <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">手順</h3>
         <ol style="margin-bottom: 24px; padding-left: 20px;">
@@ -2056,11 +2139,18 @@ const App = {
         const totalRecipes = this.state.currentSet.recipeIds.length;
         const cookedCount = this.state.cookedRecipes.length;
 
-        if (cookedCount >= totalRecipes && !this.onboarding.completed) {
-          // 全部作り終えた！
-          this.onboarding.completed = true;
-          this.saveOnboarding();
-          setTimeout(() => this.showGuide('kondateComplete'), 500);
+        if (cookedCount >= totalRecipes) {
+          const currentSetId = this.state.currentSet.id;
+          if (currentSetId && this.state.lastCompletedSetId !== currentSetId) {
+            this.state.lastCompletedSetId = currentSetId;
+            this.saveState();
+            // 全部作り終えた！
+            this.onboarding.completed = true;
+            this.saveOnboarding();
+            setTimeout(() => this.showGuide('kondateComplete'), 500);
+          } else {
+            this.showToast('作った！');
+          }
         } else {
           this.showToast('作った！');
         }
@@ -2121,6 +2211,7 @@ const App = {
       this.state.cookedRecipes = [];
       this.state.shoppingChecked = [];
       this.state.shoppingPurchased = [];
+      this.state.lastCompletedSetId = null;
       this.saveState();
       this.renderMainScreen();
       this.showToast('リセットしました');
@@ -2135,6 +2226,7 @@ const App = {
       this.state.cookedRecipes = [];
       this.state.shoppingChecked = [];
       this.state.shoppingPurchased = [];
+      this.state.lastCompletedSetId = null;
       this.saveState();
       this.renderMainScreen();
       this.showToast('次の献立に切り替えました');
@@ -2262,24 +2354,45 @@ const App = {
       </div>
       <div class="recommend-list">
         ${recommendations.map(rec => {
+          const recipes = this.getRecipesFromSet(rec.set);
+          const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
           const matched = rec.matchedFridge.slice(0, 3).join('・');
           const matchedText = matched ? `使える食材: ${matched}${rec.matchedFridge.length > 3 ? ' ほか' : ''}` : '冷蔵庫の食材が使えます';
           const sourceLabel = this.getSetSourceLabel(rec.source);
+          const accessBadges = rec.source === 'public'
+            ? this.buildAccessBadge(this.getSetAccessInfo(rec.set))
+            : '';
           const cardAction = options.context === 'select'
             ? `onclick="App.selectSet('${rec.set.id}')"`
             : '';
-          const cardClass = options.context === 'select' ? 'recommend-card clickable' : 'recommend-card';
+          const cardClass = options.context === 'select'
+            ? 'set-card fridge-set-card'
+            : 'set-card fridge-set-card is-static';
           const actionButton = options.context === 'create'
-            ? `<button class="btn-secondary btn-recommend" onclick="App.applyRecommendationTemplate('${rec.set.id}', '${rec.source}')">このセットを下書きにする</button>`
+            ? `
+              <div class="set-card-actions">
+                <button class="btn-secondary btn-recommend" onclick="App.applyRecommendationTemplate('${rec.set.id}', '${rec.source}')">
+                  このセットを下書きにする
+                </button>
+              </div>
+            `
             : '';
           return `
             <div class="${cardClass}" ${cardAction}>
-              <div class="recommend-card-header">
-                <span class="recommend-card-name">${rec.set.name}</span>
-                <span class="recommend-card-source">${sourceLabel}</span>
+              <div class="set-card-header">
+                <span class="set-card-name">${rec.set.name}</span>
+                <span class="set-card-count">${recipes.length}品</span>
               </div>
-              <div class="recommend-card-meta">使える食材 ${rec.matchCount}/${rec.totalCount}</div>
-              <div class="recommend-card-tags">${matchedText}</div>
+              <div class="set-card-meta">
+                <span class="material-icons-round">kitchen</span>
+                <span>使える食材 ${rec.matchCount}/${rec.totalCount}</span>
+                <span class="set-card-tags">${sourceLabel}</span>
+              </div>
+              ${accessBadges ? `<div class="set-card-badges">${accessBadges}</div>` : ''}
+              <div class="set-card-preview">
+                <span class="set-card-preview-item">${previewNames}${recipes.length > 3 ? '...' : ''}</span>
+              </div>
+              <div class="set-card-fridge">${matchedText}</div>
               ${actionButton}
             </div>
           `;
@@ -2326,6 +2439,7 @@ const App = {
         this.state.cookedRecipes = [];
         this.state.shoppingChecked = [];
         this.state.shoppingPurchased = [];
+        this.state.lastCompletedSetId = null;
         this.saveState();
         this.showScreen('main');
 
@@ -2450,19 +2564,26 @@ const App = {
     ];
 
     list.innerHTML = allSets.map(set => {
-      const recipeCount = (set.recipeIds || []).length;
-      const sourceLabel = set.source === 'user' ? 'マイセット' :
-                          set.source === 'starter' ? 'スターター' : 'みんなの';
+      const recipes = this.getRecipesFromSet(set);
+      const previewNames = recipes.slice(0, 3).map(r => r.name).join('、');
+      const sourceLabel = this.getSetSourceLabel(set.source);
+      const accessBadges = set.source === 'public'
+        ? this.buildAccessBadge(this.getSetAccessInfo(set))
+        : '';
       return `
-        <div class="set-template-item" onclick="App.selectSetTemplate('${set.id}', '${set.source}')">
-          <div class="set-template-info">
-            <span class="set-template-emoji">${set.emoji || '📦'}</span>
-            <div class="set-template-text">
-              <div class="set-template-name">${set.name}</div>
-              <div class="set-template-meta">${sourceLabel} · ${recipeCount}品</div>
-            </div>
+        <div class="set-card" onclick="App.selectSetTemplate('${set.id}', '${set.source}')">
+          <div class="set-card-header">
+            <span class="set-card-name">${set.name}</span>
+            <span class="set-card-count">${recipes.length}品</span>
           </div>
-          <span class="material-icons-round set-template-arrow">chevron_right</span>
+          <div class="set-card-meta">
+            <span class="material-icons-round">folder</span>
+            <span>${sourceLabel}</span>
+          </div>
+          ${accessBadges ? `<div class="set-card-badges">${accessBadges}</div>` : ''}
+          <div class="set-card-preview">
+            <span class="set-card-preview-item">${previewNames}${recipes.length > 3 ? '...' : ''}</span>
+          </div>
         </div>
       `;
     }).join('');
@@ -2651,6 +2772,10 @@ const App = {
     document.getElementById('recipe-url-input').value = '';
     document.getElementById('ingredients-list').innerHTML = '';
     document.getElementById('steps-list').innerHTML = '';
+    const intermediatesList = document.getElementById('intermediates-list');
+    if (intermediatesList) {
+      intermediatesList.innerHTML = '';
+    }
 
     // 人数選択リセット
     document.querySelectorAll('.serving-btn').forEach(btn => {
@@ -2668,6 +2793,9 @@ const App = {
 
     // 作り方の行を1つ追加
     this.addStepRow();
+
+    // 中間素材を1つ追加（任意入力）
+    this.addIntermediateGroup();
   },
 
   // ========================================
@@ -2839,6 +2967,17 @@ const App = {
         lastRow.querySelector('.step-input').value = step;
       });
     }
+
+    // 中間素材
+    if (data.intermediates && data.intermediates.length > 0) {
+      const intermediatesList = document.getElementById('intermediates-list');
+      if (intermediatesList) {
+        intermediatesList.innerHTML = '';
+        data.intermediates.forEach(intermediate => {
+          this.addIntermediateGroup(intermediate);
+        });
+      }
+    }
   },
 
   addIngredientRow() {
@@ -2869,6 +3008,85 @@ const App = {
       </button>
     `;
     list.appendChild(row);
+  },
+
+  addIntermediateGroup(data = null) {
+    const list = document.getElementById('intermediates-list');
+    if (!list) return;
+
+    const group = document.createElement('div');
+    group.className = 'intermediate-group';
+    group.innerHTML = `
+      <div class="intermediate-header">
+        <div class="intermediate-title">
+          <input type="text" class="intermediate-label-input" placeholder="A">
+          <input type="text" class="intermediate-name-input" placeholder="合わせ調味料">
+        </div>
+        <button class="btn-remove-ingredient" onclick="App.removeIntermediateGroup(this)">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="intermediate-ingredients-list"></div>
+      <button class="btn-add-ingredient" onclick="App.addIntermediateIngredientRow(this)">
+        <span class="material-icons-round">add</span>
+        材料を追加
+      </button>
+      <div class="intermediate-note">
+        作り方メモ（任意）
+      </div>
+      <input type="text" class="form-input intermediate-note-input" placeholder="例: すべて混ぜておく">
+    `;
+    list.appendChild(group);
+
+    if (data) {
+      const labelInput = group.querySelector('.intermediate-label-input');
+      const nameInput = group.querySelector('.intermediate-name-input');
+      const noteInput = group.querySelector('.intermediate-note-input');
+      if (labelInput) labelInput.value = data.label || '';
+      if (nameInput) nameInput.value = data.name || '';
+      if (noteInput && Array.isArray(data.steps)) {
+        noteInput.value = data.steps.join(' / ');
+      }
+    }
+
+    const ingredients = (data && Array.isArray(data.ingredients)) ? data.ingredients : [];
+    if (ingredients.length > 0) {
+      ingredients.forEach(ing => this.addIntermediateIngredientRow(group, ing));
+    } else {
+      this.addIntermediateIngredientRow(group);
+    }
+  },
+
+  addIntermediateIngredientRow(target, data = null) {
+    const group = target?.closest ? target.closest('.intermediate-group') : target;
+    if (!group) return;
+    const list = group.querySelector('.intermediate-ingredients-list');
+    if (!list) return;
+
+    const row = document.createElement('div');
+    row.className = 'ingredient-row intermediate-ingredient-row';
+    row.innerHTML = `
+      <input type="text" class="ing-name" placeholder="材料名">
+      <input type="text" class="ing-amount" placeholder="量">
+      <input type="text" class="ing-unit" placeholder="単位">
+      <button class="btn-remove-ingredient" onclick="this.parentElement.remove()">
+        <span class="material-icons-round">close</span>
+      </button>
+    `;
+    list.appendChild(row);
+
+    if (data) {
+      row.querySelector('.ing-name').value = data.name || '';
+      row.querySelector('.ing-amount').value = data.amount || '';
+      row.querySelector('.ing-unit').value = data.unit || '';
+    }
+  },
+
+  removeIntermediateGroup(btn) {
+    const group = btn?.closest ? btn.closest('.intermediate-group') : null;
+    if (group) {
+      group.remove();
+    }
   },
 
   removeStepRow(btn) {
@@ -2923,6 +3141,37 @@ const App = {
       }
     });
 
+    // 中間素材
+    const intermediates = [];
+    document.querySelectorAll('.intermediate-group').forEach(group => {
+      const label = group.querySelector('.intermediate-label-input')?.value.trim() || '';
+      const name = group.querySelector('.intermediate-name-input')?.value.trim() || '';
+      const note = group.querySelector('.intermediate-note-input')?.value.trim() || '';
+      const intermediateIngredients = [];
+
+      group.querySelectorAll('.intermediate-ingredient-row').forEach(row => {
+        const ingName = row.querySelector('.ing-name').value.trim();
+        const ingAmount = row.querySelector('.ing-amount').value.trim();
+        const ingUnit = row.querySelector('.ing-unit').value.trim();
+        if (ingName) {
+          intermediateIngredients.push({
+            name: ingName,
+            amount: parseFloat(ingAmount) || 0,
+            unit: ingUnit || '',
+          });
+        }
+      });
+
+      if (label || name || intermediateIngredients.length > 0 || note) {
+        intermediates.push({
+          label,
+          name,
+          ingredients: intermediateIngredients,
+          steps: note ? [note] : [],
+        });
+      }
+    });
+
     // URL
     const url = document.getElementById('recipe-url-input').value.trim();
 
@@ -2936,6 +3185,7 @@ const App = {
       servings,
       tags,
       ingredients,
+      intermediates,
       steps,
       url: url || null,
     };
@@ -3281,6 +3531,114 @@ const App = {
     this.filterMyItems();
   },
 
+  getFilterStateByContext(context) {
+    const key = context === 'public' ? 'public' : 'my';
+    if (!this.filterState[key]) {
+      this.filterState[key] = { status: [], time: [], tag: [], rating: [] };
+    }
+    return this.filterState[key];
+  },
+
+  showSortModal(context) {
+    this.activeSortContext = context === 'public' ? 'public' : 'my';
+    const label = this.activeSortContext === 'public' ? 'レシピカタログ' : 'レシピ帳';
+    const contextEl = document.getElementById('sort-context-label');
+    if (contextEl) contextEl.textContent = label;
+    this.renderSortOptions();
+    const modal = document.getElementById('modal-sort');
+    if (modal) modal.classList.remove('hidden');
+  },
+
+  renderSortOptions() {
+    const context = this.activeSortContext || 'my';
+    const current = this.currentSort[context] || 'おすすめ順';
+    document.querySelectorAll('#modal-sort .sort-option').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === current);
+    });
+  },
+
+  selectSort(value) {
+    const context = this.activeSortContext || 'my';
+    this.currentSort[context] = value;
+    this.updateFilterSummary(context);
+    this.closeModal();
+  },
+
+  showFilterModal(context) {
+    this.activeFilterContext = context === 'public' ? 'public' : 'my';
+    const label = this.activeFilterContext === 'public' ? 'レシピカタログ' : 'レシピ帳';
+    const contextEl = document.getElementById('filter-context-label');
+    if (contextEl) contextEl.textContent = label;
+    this.renderFilterOptions();
+    const modal = document.getElementById('modal-filter');
+    if (modal) modal.classList.remove('hidden');
+  },
+
+  renderFilterOptions() {
+    const context = this.activeFilterContext || 'my';
+    const state = this.getFilterStateByContext(context);
+    document.querySelectorAll('#modal-filter .filter-chip').forEach(btn => {
+      const group = btn.dataset.group;
+      const value = btn.dataset.value;
+      const selected = (state[group] || []).includes(value);
+      btn.classList.toggle('active', selected);
+    });
+  },
+
+  toggleFilterChip(button) {
+    const context = this.activeFilterContext || 'my';
+    const state = this.getFilterStateByContext(context);
+    const group = button.dataset.group;
+    const value = button.dataset.value;
+    if (!group || !value) return;
+
+    if (state[group].includes(value)) {
+      state[group] = state[group].filter(item => item !== value);
+    } else {
+      state[group].push(value);
+    }
+    button.classList.toggle('active');
+    this.updateFilterSummary(context);
+  },
+
+  resetFilters() {
+    const context = this.activeFilterContext || 'my';
+    this.filterState[context] = { status: [], time: [], tag: [], rating: [] };
+    this.renderFilterOptions();
+    this.updateFilterSummary(context);
+  },
+
+  applyFilters() {
+    const context = this.activeFilterContext || 'my';
+    this.updateFilterSummary(context);
+    this.closeModal();
+  },
+
+  updateFilterSummary(context) {
+    const target = context === 'public' ? 'public' : 'my';
+    const summary = document.getElementById(`${target}-filter-summary`);
+    if (!summary) return;
+
+    const sortLabel = this.currentSort[target] || 'おすすめ順';
+    const state = this.getFilterStateByContext(target);
+    const activeFilters = [
+      ...state.status,
+      ...state.time,
+      ...state.tag,
+      ...state.rating,
+    ];
+
+    summary.innerHTML = `
+      <span class="summary-chip primary">並び替え: ${sortLabel}</span>
+      ${activeFilters.map(label => `<span class="summary-chip">${label}</span>`).join('')}
+    `;
+
+    const filterBtn = document.getElementById(`${target}-filter-btn`);
+    if (filterBtn) filterBtn.classList.toggle('active', activeFilters.length > 0);
+    const sortBtn = document.getElementById(`${target}-sort-btn`);
+    if (sortBtn) sortBtn.classList.toggle('active', sortLabel !== 'おすすめ順');
+  },
+
   showRecipeDetail(recipeId) {
     let recipe = this.state.recipes.find(r => r.id === recipeId);
     if (!recipe) {
@@ -3331,6 +3689,7 @@ const App = {
             </li>
           `).join('')}
         </ul>
+        ${this.buildIntermediateSection(recipe)}
         ${(recipe.steps && recipe.steps.length > 0) ? `
           <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">手順</h3>
           <ol style="margin-bottom: 24px; padding-left: 20px;">
@@ -3433,6 +3792,7 @@ const App = {
             </li>
           `).join('')}
         </ul>
+        ${this.buildIntermediateSection(recipe)}
         ${(recipe.steps && recipe.steps.length > 0) ? `
           <h3 style="font-size: 14px; color: var(--text-sub); margin-bottom: 8px;">手順</h3>
           <ol style="margin-bottom: 24px; padding-left: 20px;">
@@ -3483,8 +3843,12 @@ const App = {
     const ingredientMap = new Map();
 
     recipes.forEach(recipe => {
-      if (!recipe.ingredients) return;
-      recipe.ingredients.forEach(ing => {
+      const allIngredients = [
+        ...(recipe.ingredients || []),
+        ...((recipe.intermediates || []).flatMap(item => item.ingredients || [])),
+      ];
+      if (allIngredients.length === 0) return;
+      allIngredients.forEach(ing => {
         const key = `${ing.name}-${ing.unit}`;
         if (ingredientMap.has(key)) {
           ingredientMap.get(key).amount += ing.amount;
@@ -3494,7 +3858,124 @@ const App = {
       });
     });
 
-    return Array.from(ingredientMap.values());
+    const fridgeMap = new Map();
+    (this.state.fridge || []).forEach(item => {
+      if (!item || !item.name) return;
+      const key = `${item.name}-${item.unit || ''}`;
+      const amount = typeof item.amount === 'number' ? item.amount : parseFloat(item.amount) || 0;
+      if (fridgeMap.has(key)) {
+        fridgeMap.get(key).amount += amount;
+      } else {
+        fridgeMap.set(key, { ...item, amount });
+      }
+    });
+
+    return Array.from(ingredientMap.values()).reduce((acc, ing) => {
+      const fridgeKey = `${ing.name}-${ing.unit || ''}`;
+      const fridgeItem = fridgeMap.get(fridgeKey);
+      const required = typeof ing.amount === 'number' ? ing.amount : parseFloat(ing.amount) || 0;
+
+      if (!fridgeItem) {
+        acc.push(ing);
+        return acc;
+      }
+
+      if (required > 0) {
+        const missing = Math.max(required - fridgeItem.amount, 0);
+        if (missing > 0) {
+          acc.push({ ...ing, amount: missing });
+        }
+        return acc;
+      }
+
+      // 必要量が不明な場合は、冷蔵庫にあれば除外
+      return acc;
+    }, []);
+  },
+
+  getShoppingItems() {
+    const baseItems = this.state.currentSet ? this.getAggregatedIngredients() : [];
+    const extraItems = Array.isArray(this.state.shoppingExtraItems)
+      ? this.state.shoppingExtraItems
+      : [];
+    return [
+      ...baseItems.map(item => ({ ...item, isExtra: false })),
+      ...extraItems.map(item => ({
+        name: item.name,
+        amount: item.amount,
+        unit: item.unit,
+        key: item.key,
+        isExtra: true,
+      })),
+    ];
+  },
+
+  addExtraShoppingItemFromInputs(nameId, amountId, unitId) {
+    const nameInput = document.getElementById(nameId);
+    const amountInput = document.getElementById(amountId);
+    const unitInput = document.getElementById(unitId);
+    if (!nameInput || !amountInput || !unitInput) return;
+
+    const name = nameInput.value.trim();
+    const amount = parseFloat(amountInput.value) || 1;
+    const unit = unitInput.value.trim();
+
+    if (!name) {
+      this.showToast('食材名を入力してください');
+      return;
+    }
+
+    const id = `extra-${Date.now()}`;
+    this.state.shoppingExtraItems.push({
+      id,
+      key: id,
+      name,
+      amount,
+      unit,
+    });
+
+    nameInput.value = '';
+    amountInput.value = '1';
+    unitInput.value = '';
+
+    this.saveState();
+    this.updateShoppingListButton();
+    this.updateBadges();
+  },
+
+  addExtraShoppingItem() {
+    this.addExtraShoppingItemFromInputs(
+      'shopping-extra-name',
+      'shopping-extra-amount',
+      'shopping-extra-unit'
+    );
+    this.renderShoppingScreen();
+    this.showToast('買い物リストに追加しました');
+  },
+
+  addExtraShoppingItemFromPopup() {
+    this.shoppingPopupChecked = [];
+    this.addExtraShoppingItemFromInputs(
+      'shopping-extra-name-popup',
+      'shopping-extra-amount-popup',
+      'shopping-extra-unit-popup'
+    );
+    this.renderShoppingPopup();
+    this.showToast('買い物リストに追加しました');
+  },
+
+  removeExtraShoppingItem(key) {
+    if (!key) return;
+    this.state.shoppingExtraItems = this.state.shoppingExtraItems.filter(item => item.key !== key);
+    this.state.shoppingPurchased = (this.state.shoppingPurchased || []).filter(k => k !== key);
+    this.state.shoppingChecked = (this.state.shoppingChecked || []).filter(k => k !== key);
+    this.shoppingPopupChecked = [];
+    this.saveState();
+    this.renderShoppingScreen();
+    this.renderShoppingPopup();
+    this.updateShoppingListButton();
+    this.updateBadges();
+    this.showToast('追加した食材を削除しました');
   },
 
   renderShoppingScreen() {
@@ -3508,30 +3989,47 @@ const App = {
       if (emptySubtext) emptySubtext.textContent = subtext;
     };
 
-    if (!this.state.currentSet) {
-      setEmptyCopy('買うものはないよ', 'セットを選ぶと出てくるよ');
+    const allItems = this.getShoppingItems();
+    const purchasedSet = new Set(this.state.shoppingPurchased || []);
+    const rawChecked = Array.isArray(this.state.shoppingChecked) ? this.state.shoppingChecked : [];
+    const checkedSet = new Set();
+    let needsMigration = false;
+    rawChecked.forEach(value => {
+      if (typeof value === 'number') {
+        const item = allItems[value];
+        if (item && item.key) {
+          checkedSet.add(item.key);
+        }
+        needsMigration = true;
+      } else if (typeof value === 'string') {
+        checkedSet.add(value);
+      }
+    });
+    if (needsMigration) {
+      this.state.shoppingChecked = Array.from(checkedSet);
+      this.saveState();
+    }
+
+    const items = allItems.map((ing, index) => ({
+      ing,
+      index,
+      checked: checkedSet.has(ing.key),
+    })).filter(item => !purchasedSet.has(item.ing.key));
+
+    if (allItems.length === 0) {
+      if (this.state.currentSet) {
+        setEmptyCopy('買うものはないよ', '材料がまだないよ');
+      } else {
+        setEmptyCopy('買うものはないよ', 'セットを選ぶと出てくるよ');
+      }
       list.innerHTML = '';
       empty.classList.remove('hidden');
       actions.classList.add('hidden');
       return;
     }
 
-    const ingredients = this.getAggregatedIngredients();
-    const purchasedSet = new Set(this.state.shoppingPurchased || []);
-    const checkedSet = new Set(this.state.shoppingChecked || []);
-
-    const items = ingredients.map((ing, index) => ({
-      ing,
-      index,
-      checked: checkedSet.has(index),
-    })).filter(item => !purchasedSet.has(item.ing.key));
-
     if (items.length === 0) {
-      if (ingredients.length > 0) {
-        setEmptyCopy('買い物は完了', '買ったものは冷蔵庫へ移動したよ');
-      } else {
-        setEmptyCopy('買うものはないよ', '材料がまだないよ');
-      }
+      setEmptyCopy('買い物は完了', '買ったものは冷蔵庫へ移動したよ');
       list.innerHTML = '';
       empty.classList.remove('hidden');
       actions.classList.add('hidden');
@@ -3549,14 +4047,20 @@ const App = {
     });
 
     list.innerHTML = sortedItems.map(item => `
-      <div class="shopping-item ${item.checked ? 'checked' : ''}" onclick="App.toggleShoppingItem(${item.index})">
+      <div class="shopping-item ${item.checked ? 'checked' : ''}" onclick="App.toggleShoppingItem('${item.ing.key}')">
         <div class="shopping-checkbox">
           <span class="material-icons-round">check</span>
         </div>
         <div class="shopping-info">
           <div class="shopping-line">
             <span class="shopping-name">${item.ing.name}</span>
+            ${item.ing.isExtra ? '<span class="shopping-badge">追加</span>' : ''}
             <span class="shopping-amount">${item.ing.amount}${item.ing.unit}</span>
+            ${item.ing.isExtra ? `
+              <button class="shopping-remove" onclick="event.stopPropagation(); App.removeExtraShoppingItem('${item.ing.key}')">
+                <span class="material-icons-round">close</span>
+              </button>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -3569,13 +4073,15 @@ const App = {
     }
   },
 
-  toggleShoppingItem(index) {
-    const idx = this.state.shoppingChecked.indexOf(index);
+  toggleShoppingItem(key) {
+    const list = Array.isArray(this.state.shoppingChecked) ? this.state.shoppingChecked : [];
+    const idx = list.indexOf(key);
     if (idx === -1) {
-      this.state.shoppingChecked.push(index);
+      list.push(key);
     } else {
-      this.state.shoppingChecked.splice(idx, 1);
+      list.splice(idx, 1);
     }
+    this.state.shoppingChecked = list;
     this.saveState();
     this.renderShoppingScreen();
   },
@@ -3925,6 +4431,7 @@ const App = {
     this.state.cookedRecipes = [];
     this.state.shoppingChecked = [];
     this.state.shoppingPurchased = [];
+    this.state.lastCompletedSetId = null;
     this.saveState();
     this.closeModal();
     this.showScreen('main');
@@ -4187,8 +4694,8 @@ const App = {
   },
 
   purchaseAll() {
-    const ingredients = this.getAggregatedIngredients();
-    if (ingredients.length === 0) {
+    const items = this.getShoppingItems();
+    if (items.length === 0) {
       this.showToast('買うものがありません');
       return;
     }
@@ -4197,19 +4704,22 @@ const App = {
       this.state.fridge = [];
     }
 
-    ingredients.forEach(ing => {
+    items.forEach(ing => {
       const existing = this.state.fridge.find(
         f => f.name === ing.name && f.unit === ing.unit
       );
       if (existing) {
         existing.amount += ing.amount;
       } else {
-        this.state.fridge.push({ ...ing });
+        this.state.fridge.push({ name: ing.name, amount: ing.amount, unit: ing.unit });
       }
     });
 
     this.state.shoppingChecked = [];
-    this.state.shoppingPurchased = ingredients.map(ing => ing.key);
+    this.state.shoppingPurchased = items.map(ing => ing.key);
+    this.state.shoppingExtraItems = this.state.shoppingExtraItems.filter(
+      item => !this.state.shoppingPurchased.includes(item.key)
+    );
 
     this.saveState();
     this.renderShoppingScreen();
@@ -4232,15 +4742,16 @@ const App = {
       return;
     }
 
-    const ingredients = this.getAggregatedIngredients();
+    const items = this.getShoppingItems();
     const purchasedSet = new Set(this.state.shoppingPurchased || []);
 
     if (!this.state.fridge) {
       this.state.fridge = [];
     }
 
-    this.state.shoppingChecked.forEach(index => {
-      const ing = ingredients[index];
+    const checkedKeys = new Set(this.state.shoppingChecked || []);
+    items.forEach(ing => {
+      if (!checkedKeys.has(ing.key)) return;
       if (!ing) return;
 
       const existing = this.state.fridge.find(
@@ -4249,7 +4760,7 @@ const App = {
       if (existing) {
         existing.amount += ing.amount;
       } else {
-        this.state.fridge.push({ ...ing });
+        this.state.fridge.push({ name: ing.name, amount: ing.amount, unit: ing.unit });
       }
 
       purchasedSet.add(ing.key);
@@ -4257,6 +4768,9 @@ const App = {
 
     this.state.shoppingChecked = [];
     this.state.shoppingPurchased = Array.from(purchasedSet);
+    this.state.shoppingExtraItems = this.state.shoppingExtraItems.filter(
+      item => !purchasedSet.has(item.key)
+    );
 
     this.saveState();
     this.renderShoppingScreen();
@@ -4316,14 +4830,25 @@ const App = {
 
   renderShoppingPopup() {
     const body = document.getElementById('shopping-popup-body');
-    const ingredients = this.getAggregatedIngredients();
+    const ingredients = this.getShoppingItems();
     const purchasedSet = new Set(this.state.shoppingPurchased || []);
 
     // 未購入のもののみ表示
     const unpurchased = ingredients.filter(ing => !purchasedSet.has(ing.key));
+    const addCardHtml = `
+      <div class="shopping-add-card compact">
+        <div class="shopping-add-title">食材を追加</div>
+        <div class="shopping-add-row">
+          <input type="text" id="shopping-extra-name-popup" class="shopping-add-input" placeholder="追加する食材">
+          <input type="number" id="shopping-extra-amount-popup" class="shopping-add-amount" value="1" min="0.1" step="0.1">
+          <input type="text" id="shopping-extra-unit-popup" class="shopping-add-unit" placeholder="単位">
+          <button class="btn-mini" onclick="App.addExtraShoppingItemFromPopup()">追加</button>
+        </div>
+      </div>
+    `;
 
     if (unpurchased.length === 0) {
-      body.innerHTML = '<div class="shopping-popup-empty">買うものはありません</div>';
+      body.innerHTML = `<div class="shopping-popup-empty">買うものはありません</div>${addCardHtml}`;
       document.getElementById('btn-reflect-fridge').disabled = true;
       return;
     }
@@ -4340,17 +4865,23 @@ const App = {
     body.innerHTML = `
       <div class="shopping-popup-list">
         ${sortedItems.map(({ ing, index }) => `
-          <div class="shopping-popup-item ${this.shoppingPopupChecked.includes(index) ? 'checked' : ''}" data-index="${index}">
-            <div class="checkbox-wrapper" onclick="App.toggleShoppingPopupItem(${index})">
+          <div class="shopping-popup-item ${this.shoppingPopupChecked.includes(index) ? 'checked' : ''}" data-index="${index}" onclick="App.toggleShoppingPopupItem(${index})">
+            <div class="checkbox-wrapper">
               <span class="material-icons-round checkbox-icon">
-                ${this.shoppingPopupChecked.includes(index) ? 'check_box' : 'check_box_outline_blank'}
+                ${this.shoppingPopupChecked.includes(index) ? 'check_circle' : 'radio_button_unchecked'}
               </span>
             </div>
-            <span class="shopping-item-name">${ing.name}</span>
+            <span class="shopping-item-name">${ing.name}${ing.isExtra ? ' <span class="shopping-badge">追加</span>' : ''}</span>
             <span class="shopping-popup-amount">${ing.amount}${ing.unit}</span>
+            ${ing.isExtra ? `
+              <button class="shopping-remove" onclick="event.stopPropagation(); App.removeExtraShoppingItem('${ing.key}')">
+                <span class="material-icons-round">close</span>
+              </button>
+            ` : ''}
           </div>
         `).join('')}
       </div>
+      ${addCardHtml}
     `;
 
     document.getElementById('btn-reflect-fridge').disabled = this.shoppingPopupChecked.length === 0;
@@ -4388,17 +4919,13 @@ const App = {
     }
   },
 
-  showReflectOptions() {
+  reflectCheckedToFridge() {
     if (this.shoppingPopupChecked.length === 0) {
       this.showToast('チェックされた項目がありません');
       return;
     }
-    document.getElementById('modal-shopping').classList.add('hidden');
-    document.getElementById('modal-reflect-options').classList.remove('hidden');
-  },
 
-  reflectCheckedToFridge() {
-    const ingredients = this.getAggregatedIngredients();
+    const ingredients = this.getShoppingItems();
     const purchasedSet = new Set(this.state.shoppingPurchased || []);
     const unpurchased = ingredients.filter(ing => !purchasedSet.has(ing.key));
 
@@ -4416,13 +4943,16 @@ const App = {
       if (existing) {
         existing.amount += ing.amount;
       } else {
-        this.state.fridge.push({ ...ing });
+        this.state.fridge.push({ name: ing.name, amount: ing.amount, unit: ing.unit });
       }
 
       purchasedSet.add(ing.key);
     });
 
     this.state.shoppingPurchased = Array.from(purchasedSet);
+    this.state.shoppingExtraItems = this.state.shoppingExtraItems.filter(
+      item => !purchasedSet.has(item.key)
+    );
     this.shoppingPopupChecked = [];
 
     this.saveState();
@@ -4441,17 +4971,12 @@ const App = {
     }
   },
 
-  showReceiptUpload() {
-    this.closeModal();
-    this.showToast('レシート読み取りは準備中です');
-  },
-
   updateShoppingListButton() {
     const button = document.getElementById('shopping-list-button');
     const countEl = document.getElementById('shopping-count-main');
     if (!button) return;
 
-    const ingredients = this.getAggregatedIngredients();
+    const ingredients = this.getShoppingItems();
     const purchasedSet = new Set(this.state.shoppingPurchased || []);
     const unpurchased = ingredients.filter(ing => !purchasedSet.has(ing.key));
 
@@ -4583,6 +5108,8 @@ const App = {
     // 初期状態の設定
     this.updateSaveSetButton();
     this.updateBadges();
+    this.updateFilterSummary('my');
+    this.updateFilterSummary('public');
   },
 
   // ========================================
@@ -4618,9 +5145,7 @@ const App = {
   },
 
   getShoppingListCount() {
-    if (!this.state.currentSet) return 0;
-
-    const ingredients = this.getAggregatedIngredients();
+    const ingredients = this.getShoppingItems();
     const purchasedSet = new Set(this.state.shoppingPurchased || []);
 
     return ingredients.filter(ing => !purchasedSet.has(ing.key)).length;

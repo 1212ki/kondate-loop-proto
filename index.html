@@ -271,6 +271,18 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label">中間素材（タレ/合わせ調味料）</label>
+            <p class="form-hint">手順の前に作るものがあれば追加</p>
+            <div class="intermediates-list" id="intermediates-list">
+              <!-- 中間素材入力欄 -->
+            </div>
+            <button class="btn-add-ingredient" onclick="App.addIntermediateGroup()">
+              <span class="material-icons-round">add</span>
+              中間素材を追加
+            </button>
+          </div>
+
+          <div class="form-group">
             <label class="form-label">作り方</label>
             <div class="steps-list" id="steps-list">
               <!-- 手順入力欄 -->
@@ -319,10 +331,21 @@
         <div class="content-wrapper">
           <h2 class="screen-title">レシピ帳</h2>
           <!-- 検索バー -->
-          <div class="search-box" style="margin-bottom: var(--space-md);">
-            <span class="material-icons-round">search</span>
-            <input type="text" id="recipe-search" class="search-input" placeholder="キーワードで検索" oninput="App.filterMyItems()">
+          <div class="search-row">
+            <div class="search-box">
+              <span class="material-icons-round">search</span>
+              <input type="text" id="recipe-search" class="search-input" placeholder="キーワードで検索" oninput="App.filterMyItems()">
+            </div>
+            <div class="search-actions">
+              <button class="icon-button" id="my-sort-btn" onclick="App.showSortModal('my')" aria-label="並び替え">
+                <span class="material-icons-round">sort</span>
+              </button>
+              <button class="icon-button" id="my-filter-btn" onclick="App.showFilterModal('my')" aria-label="絞り込み">
+                <span class="material-icons-round">tune</span>
+              </button>
+            </div>
           </div>
+          <div class="filter-summary" id="my-filter-summary"></div>
           <!-- レシピ/セット タブ -->
           <div class="tab-switcher">
             <button class="tab-btn active" data-tab="my-recipes" onclick="App.switchMyTab('recipes')">レシピ</button>
@@ -431,17 +454,27 @@
           <!-- 買い物リスト -->
         </div>
 
+        <div id="shopping-empty" class="empty-state">
+          <div class="empty-illustration">🛒</div>
+          <p class="empty-text">買うものはないよ</p>
+          <p class="empty-subtext">セットを選ぶと出てくるよ</p>
+        </div>
+
+        <div class="shopping-add-card">
+          <div class="shopping-add-title">食材を追加</div>
+          <div class="shopping-add-row">
+            <input type="text" id="shopping-extra-name" class="shopping-add-input" placeholder="追加する食材">
+            <input type="number" id="shopping-extra-amount" class="shopping-add-amount" value="1" min="0.1" step="0.1">
+            <input type="text" id="shopping-extra-unit" class="shopping-add-unit" placeholder="単位">
+            <button class="btn-mini" onclick="App.addExtraShoppingItem()">追加</button>
+          </div>
+        </div>
+
         <div id="shopping-actions" class="shopping-actions hidden">
           <button id="btn-purchase" class="btn-primary" onclick="App.purchaseChecked()" disabled>
             <span class="material-icons-round">done</span>
             買った
           </button>
-        </div>
-
-        <div id="shopping-empty" class="empty-state">
-          <div class="empty-illustration">🛒</div>
-          <p class="empty-text">買うものはないよ</p>
-          <p class="empty-subtext">セットを選ぶと出てくるよ</p>
         </div>
       </main>
     </div>
@@ -459,10 +492,21 @@
         <div class="content-wrapper">
           <h2 class="screen-title">レシピカタログ</h2>
           <!-- 検索バー -->
-          <div class="search-box" style="margin-bottom: var(--space-md);">
-            <span class="material-icons-round">search</span>
-            <input type="text" id="public-search" class="search-input" placeholder="キーワードで検索" oninput="App.filterPublicItems()">
+          <div class="search-row">
+            <div class="search-box">
+              <span class="material-icons-round">search</span>
+              <input type="text" id="public-search" class="search-input" placeholder="キーワードで検索" oninput="App.filterPublicItems()">
+            </div>
+            <div class="search-actions">
+              <button class="icon-button" id="public-sort-btn" onclick="App.showSortModal('public')" aria-label="並び替え">
+                <span class="material-icons-round">sort</span>
+              </button>
+              <button class="icon-button" id="public-filter-btn" onclick="App.showFilterModal('public')" aria-label="絞り込み">
+                <span class="material-icons-round">tune</span>
+              </button>
+            </div>
           </div>
+          <div class="filter-summary" id="public-filter-summary"></div>
           <!-- レシピ/セット タブ -->
           <div class="tab-switcher">
             <button class="tab-btn active" data-tab="public-recipes" onclick="App.switchPublicTab('recipes')">レシピ</button>
@@ -906,6 +950,85 @@
       </div>
     </div>
 
+    <!-- 並び替えモーダル -->
+    <div id="modal-sort" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content modal-small">
+        <div class="modal-header">
+          <h2 class="modal-title">並び替え</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-guide-text" id="sort-context-label">レシピ帳</p>
+          <div class="sort-option-list">
+            <button class="sort-option" data-value="おすすめ順" onclick="App.selectSort(this.dataset.value)">おすすめ順</button>
+            <button class="sort-option" data-value="評価順" onclick="App.selectSort(this.dataset.value)">評価順</button>
+            <button class="sort-option" data-value="人気順" onclick="App.selectSort(this.dataset.value)">人気順</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 絞り込みモーダル -->
+    <div id="modal-filter" class="modal modal-sheet hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content modal-sheet">
+        <div class="modal-header">
+          <h2 class="modal-title">絞り込み</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-guide-text" id="filter-context-label">レシピ帳</p>
+
+          <div class="filter-section">
+            <div class="filter-section-title">販売ステータス</div>
+            <div class="filter-chip-group">
+              <button class="filter-chip" data-group="status" data-value="購入済み" onclick="App.toggleFilterChip(this)">購入済み</button>
+              <button class="filter-chip" data-group="status" data-value="フリー" onclick="App.toggleFilterChip(this)">フリー</button>
+              <button class="filter-chip" data-group="status" data-value="有料" onclick="App.toggleFilterChip(this)">有料</button>
+            </div>
+          </div>
+
+          <div class="filter-section">
+            <div class="filter-section-title">調理時間</div>
+            <div class="filter-chip-group">
+              <button class="filter-chip" data-group="time" data-value="15分以内" onclick="App.toggleFilterChip(this)">15分以内</button>
+              <button class="filter-chip" data-group="time" data-value="30分以内" onclick="App.toggleFilterChip(this)">30分以内</button>
+              <button class="filter-chip" data-group="time" data-value="45分以内" onclick="App.toggleFilterChip(this)">45分以内</button>
+            </div>
+          </div>
+
+          <div class="filter-section">
+            <div class="filter-section-title">タグ</div>
+            <div class="filter-chip-group">
+              <button class="filter-chip" data-group="tag" data-value="時短" onclick="App.toggleFilterChip(this)">時短</button>
+              <button class="filter-chip" data-group="tag" data-value="ヘルシー" onclick="App.toggleFilterChip(this)">ヘルシー</button>
+              <button class="filter-chip" data-group="tag" data-value="子ども向け" onclick="App.toggleFilterChip(this)">子ども向け</button>
+              <button class="filter-chip" data-group="tag" data-value="作り置き" onclick="App.toggleFilterChip(this)">作り置き</button>
+              <button class="filter-chip" data-group="tag" data-value="節約" onclick="App.toggleFilterChip(this)">節約</button>
+            </div>
+          </div>
+
+          <div class="filter-section">
+            <div class="filter-section-title">評価</div>
+            <div class="filter-chip-group">
+              <button class="filter-chip" data-group="rating" data-value="★4.0以上" onclick="App.toggleFilterChip(this)">★4.0以上</button>
+              <button class="filter-chip" data-group="rating" data-value="★4.5以上" onclick="App.toggleFilterChip(this)">★4.5以上</button>
+              <button class="filter-chip" data-group="rating" data-value="新着" onclick="App.toggleFilterChip(this)">新着</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.resetFilters()">リセット</button>
+          <button class="btn-primary" onclick="App.applyFilters()">適用する</button>
+        </div>
+      </div>
+    </div>
+
     <!-- アカウント種別モーダル -->
     <div id="modal-account-type" class="modal hidden">
       <div class="modal-backdrop" onclick="App.closeModal()"></div>
@@ -1214,36 +1337,10 @@
         </div>
         <div class="modal-footer" id="shopping-popup-footer">
           <button class="btn-secondary" onclick="App.closeModal()">閉じる</button>
-          <button class="btn-primary" id="btn-reflect-fridge" onclick="App.showReflectOptions()">
+          <button class="btn-primary" id="btn-reflect-fridge" onclick="App.reflectCheckedToFridge()">
             <span class="material-icons-round">check</span>
             買った
           </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 冷蔵庫反映方法選択モーダル -->
-    <div id="modal-reflect-options" class="modal hidden">
-      <div class="modal-backdrop" onclick="App.closeModal()"></div>
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 class="modal-title">冷蔵庫に反映します</h2>
-          <button class="modal-close" onclick="App.closeModal()">
-            <span class="material-icons-round">close</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p class="reflect-guide-text">反映方法を選んでください</p>
-          <div class="reflect-options">
-            <button class="btn-option" onclick="App.reflectCheckedToFridge()">
-              <span class="material-icons-round">check_circle</span>
-              <span>チェックした材料を反映</span>
-            </button>
-            <button class="btn-option" onclick="App.showReceiptUpload()">
-              <span class="material-icons-round">receipt_long</span>
-              <span>レシートから反映（準備中）</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
