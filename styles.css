@@ -3025,8 +3025,8 @@ input {
 }
 
 .shopping-item.checked .shopping-checkbox {
-  background-color: var(--text-sub);
-  border-color: var(--text-sub);
+  background-color: var(--success);
+  border-color: var(--success);
   color: white;
 }
 
@@ -4233,11 +4233,11 @@ input {
 }
 
 .shopping-popup-item.checked {
-  background: var(--bg-subtle);
+  background: var(--success-light);
 }
 
 .shopping-popup-item.checked .shopping-item-name {
-  color: var(--text-sub);
+  color: var(--success);
   text-decoration: line-through;
 }
 
@@ -4253,7 +4253,7 @@ input {
 }
 
 .shopping-popup-item.checked .checkbox-icon {
-  color: var(--text-sub);
+  color: var(--success);
 }
 
 .shopping-item-name {

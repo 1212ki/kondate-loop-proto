@@ -4903,7 +4903,7 @@ const App = {
     if (item) {
       const icon = item.querySelector('.checkbox-icon');
       if (icon) {
-        icon.textContent = isChecking ? 'check_box' : 'check_box_outline_blank';
+        icon.textContent = isChecking ? 'check_circle' : 'radio_button_unchecked';
       }
       item.classList.toggle('checked', isChecking);
     }
