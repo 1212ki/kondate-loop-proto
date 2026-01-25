@@ -1007,7 +1007,6 @@ const App = {
     this.renderMyPageProfile();
     this.renderMyPageSummary();
     this.renderMyPageArchiveSection();
-    this.renderAccountSection();
     this.renderCreatorProfileSection();
     this.renderPaymentSection();
     this.renderPurchaseHistory();
