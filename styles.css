@@ -3200,6 +3200,7 @@ input {
   align-items: center;
   gap: var(--space-sm);
   height: 40px;
+  margin-left: auto;
 }
 
 /* ヘッダーアクション1つの場合（こんだて表用） */
@@ -3209,6 +3210,7 @@ input {
   align-items: center;
   justify-content: flex-end;
   height: 40px;
+  margin-left: auto;
 }
 
 /* 冷蔵庫ショートカット */

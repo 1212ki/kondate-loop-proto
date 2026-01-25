@@ -5124,6 +5124,14 @@ const App = {
       document.getElementById('badge-fridge-main'),
       document.getElementById('badge-fridge-recipes'),
       document.getElementById('badge-fridge-public'),
+      document.getElementById('badge-fridge-mypage'),
+      document.getElementById('badge-fridge-set-select'),
+      document.getElementById('badge-fridge-set-create'),
+      document.getElementById('badge-fridge-recipe-add'),
+      document.getElementById('badge-fridge-shopping'),
+      document.getElementById('badge-fridge-archive'),
+      document.getElementById('badge-fridge-diagnosis'),
+      document.getElementById('badge-fridge-purchases'),
     ];
     fridgeBadges.forEach(badge => {
       if (badge) {
