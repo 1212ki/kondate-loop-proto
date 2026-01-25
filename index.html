@@ -105,17 +105,6 @@
           </div>
         </div>
 
-        <!-- 履歴 -->
-        <div id="history-section" class="history-section hidden">
-          <button class="history-toggle" onclick="App.toggleHistory()">
-            <span class="material-icons-round" id="history-toggle-icon">expand_more</span>
-            <span>過去の献立</span>
-            <span class="history-count" id="history-count">0</span>
-          </button>
-          <div id="history-list" class="history-list hidden">
-            <!-- 履歴がここに入る -->
-          </div>
-        </div>
       </main>
 
       <nav class="bottom-nav">
@@ -130,6 +119,10 @@
         <button class="nav-item" onclick="App.showScreen('public')">
           <span class="material-icons-round">explore</span>
           <span class="nav-label">レシピカタログ</span>
+        </button>
+        <button class="nav-item" onclick="App.showScreen('mypage')">
+          <span class="material-icons-round">person</span>
+          <span class="nav-label">マイページ</span>
         </button>
       </nav>
     </div>
@@ -148,6 +141,8 @@
 
       <main class="main-content with-header">
         <h2 class="screen-title">セット選択</h2>
+
+        <div id="fridge-recommend-select" class="fridge-recommend hidden"></div>
 
         <div class="tab-switcher">
           <button class="tab-btn active" data-tab="set-my" onclick="App.switchSetSelectTab('my')">レシピ帳</button>
@@ -190,6 +185,8 @@
 
       <main class="main-content with-header">
         <h2 class="screen-title">セットを作る</h2>
+
+        <div id="fridge-recommend-create" class="fridge-recommend hidden"></div>
 
         <!-- 既存のセットから始めるオプション -->
         <div class="copy-from-existing">
@@ -417,6 +414,10 @@
           <span class="material-icons-round">explore</span>
           <span class="nav-label">レシピカタログ</span>
         </button>
+        <button class="nav-item" onclick="App.showScreen('mypage')">
+          <span class="material-icons-round">person</span>
+          <span class="nav-label">マイページ</span>
+        </button>
       </nav>
     </div>
 
@@ -533,6 +534,248 @@
           <span class="material-icons-round">explore</span>
           <span class="nav-label">レシピカタログ</span>
         </button>
+        <button class="nav-item" onclick="App.showScreen('mypage')">
+          <span class="material-icons-round">person</span>
+          <span class="nav-label">マイページ</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- 7. マイページ -->
+    <div id="screen-mypage" class="screen">
+      <header class="header header-main">
+        <div class="header-logo">
+          <span class="logo-icon">🍽️</span>
+          <span class="logo-text">kondate loop</span>
+        </div>
+      </header>
+
+      <main class="main-content with-nav">
+        <div class="content-wrapper">
+          <h2 class="screen-title">マイページ</h2>
+
+          <div class="mypage-profile-card">
+            <div class="profile-avatar" id="mypage-avatar">🙂</div>
+            <div class="profile-info">
+              <div class="profile-name" id="mypage-name">あなた</div>
+              <div class="profile-meta" id="mypage-account-label">ユーザー</div>
+            </div>
+            <button class="btn-text-small" onclick="App.showAccountTypeModal()">使い方を変える</button>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">わたしの記録</span>
+            <span class="section-meta" id="mypage-record-note"></span>
+          </div>
+          <div class="mypage-summary">
+            <div class="mypage-summary-card">
+              <span class="summary-label">レシピ</span>
+              <span class="summary-value" id="mypage-recipe-count">0</span>
+            </div>
+            <div class="mypage-summary-card">
+              <span class="summary-label">セット</span>
+              <span class="summary-value" id="mypage-set-count">0</span>
+            </div>
+            <div class="mypage-summary-card">
+              <span class="summary-label">冷蔵庫</span>
+              <span class="summary-value" id="mypage-fridge-count">0</span>
+            </div>
+            <div class="mypage-summary-card">
+              <span class="summary-label">献立履歴</span>
+              <span class="summary-value" id="mypage-history-total">0</span>
+            </div>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">こんだてカレンダー</span>
+            <span class="section-meta" id="mypage-history-count"></span>
+          </div>
+          <div class="calendar-card" id="mypage-history-calendar">
+            <div class="calendar-header">
+              <button class="btn-text-icon" onclick="App.shiftHistoryMonth(-1)">
+                <span class="material-icons-round">chevron_left</span>
+              </button>
+              <div class="calendar-title" id="history-month-label"></div>
+              <button class="btn-text-icon" onclick="App.shiftHistoryMonth(1)">
+                <span class="material-icons-round">chevron_right</span>
+              </button>
+            </div>
+            <div class="calendar-weekdays">
+              <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+            </div>
+            <div id="history-calendar-grid" class="calendar-grid"></div>
+          </div>
+
+          <div id="mypage-history-empty" class="empty-state hidden">
+            <div class="empty-illustration">📖</div>
+            <p class="empty-text">まだ履歴がありません</p>
+            <p class="empty-subtext">献立をリセットすると履歴に残ります</p>
+          </div>
+          <div id="mypage-history-day" class="history-day hidden">
+            <div class="history-day-header">
+              <span class="history-day-label" id="mypage-history-day-label"></span>
+              <span class="section-meta" id="mypage-history-day-count"></span>
+            </div>
+            <div id="mypage-history-list" class="history-story-list">
+              <!-- 履歴カード -->
+            </div>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">使い方のスタイル</span>
+            <span class="section-meta" id="mypage-plan-status"></span>
+          </div>
+          <div class="mypage-section-card">
+            <p class="mypage-section-desc">
+              主導権はあなた。いつでも戻せます。
+            </p>
+            <div class="account-type-chips" id="account-type-chips">
+              <button class="chip-btn" data-type="user" onclick="App.setAccountType('user')">ユーザー</button>
+              <button class="chip-btn" data-type="creator" onclick="App.setAccountType('creator')">クリエイター</button>
+              <button class="chip-btn" data-type="paid" onclick="App.setAccountType('paid')">有料クリエイター</button>
+            </div>
+            <div class="mypage-section-note" id="mypage-account-note"></div>
+            <div class="mypage-section-actions" id="mypage-account-actions"></div>
+          </div>
+
+          <div id="mypage-creator-profile" class="hidden">
+            <div class="section-header">
+              <span class="section-label">公開プロフィール</span>
+              <span class="section-meta" id="creator-profile-status"></span>
+            </div>
+            <div class="mypage-section-card">
+              <div class="creator-profile-card">
+                <div class="creator-profile-name" id="creator-profile-name"></div>
+                <div class="creator-profile-bio" id="creator-profile-bio"></div>
+              </div>
+              <div class="mypage-section-actions">
+                <button class="btn-secondary" onclick="App.showCreatorProfileModal()">
+                  公開プロフィールを編集
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">お支払い</span>
+            <span class="section-meta" id="mypage-payment-label"></span>
+          </div>
+          <div class="mypage-section-card">
+            <div class="payment-card" id="mypage-payment-body"></div>
+            <div class="mypage-section-actions">
+              <button class="btn-secondary" onclick="App.showPaymentModal()">
+                登録 / 変更
+              </button>
+              <button class="btn-text" id="btn-payment-delete" onclick="App.clearPaymentMethod()">削除</button>
+            </div>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">買ったセット</span>
+            <span class="section-meta" id="mypage-purchase-count"></span>
+          </div>
+          <div id="mypage-purchase-empty" class="empty-state hidden">
+            <div class="empty-illustration">🎁</div>
+            <p class="empty-text">まだ買ったセットがありません</p>
+            <p class="empty-subtext">気になるセットはレシピカタログで探せます</p>
+          </div>
+          <div id="mypage-purchase-list" class="mypage-list">
+            <!-- 購入履歴 -->
+          </div>
+          <div class="mypage-section-actions">
+            <button class="btn-secondary" onclick="App.showScreen('public')">
+              レシピカタログを見る
+            </button>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">作った料理の記録</span>
+            <span class="section-meta" id="mypage-cooking-count"></span>
+          </div>
+          <div id="mypage-cooking-empty" class="empty-state hidden">
+            <div class="empty-illustration">📸</div>
+            <p class="empty-text">作った料理がまだありません</p>
+            <p class="empty-subtext">作った料理がここに残ります</p>
+          </div>
+          <div id="mypage-cooking-log" class="mypage-log-list">
+            <!-- 料理ログ -->
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">わたしの傾向メモ</span>
+            <span class="section-meta" id="mypage-diagnosis-note"></span>
+          </div>
+          <div class="mypage-section-card">
+            <p class="mypage-section-desc">
+              料理の履歴から「今の好み」を診断としてまとめます。<br>
+              ボタンを押すと診断をつくります。
+            </p>
+            <div class="mypage-section-actions" id="mypage-diagnosis-actions"></div>
+            <div id="mypage-diagnosis-insights" class="diagnosis-insights"></div>
+            <div id="mypage-diagnosis-related" class="diagnosis-related"></div>
+          </div>
+
+          <div id="mypage-creator-panel" class="hidden">
+            <div class="section-header">
+              <span class="section-label">公開の記録</span>
+              <span class="section-meta">概要</span>
+            </div>
+            <div class="mypage-section-card">
+              <div class="creator-metrics">
+                <div class="creator-metric">
+                  <span class="metric-label">公開セット</span>
+                  <span class="metric-value" id="creator-public-sets">0</span>
+                </div>
+                <div class="creator-metric">
+                  <span class="metric-label">購入数</span>
+                  <span class="metric-value" id="creator-sales-count">0</span>
+                </div>
+                <div class="creator-metric">
+                  <span class="metric-label">売上</span>
+                  <span class="metric-value" id="creator-sales-amount">-</span>
+                </div>
+              </div>
+              <div class="mypage-section-actions">
+                <button class="btn-secondary" onclick="App.showCreatorProfileModal()">
+                  公開プロフィールを整える
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-header">
+            <span class="section-label">設定</span>
+          </div>
+          <div class="mypage-placeholder-list">
+            <div class="mypage-placeholder-item">
+              <span>通知設定</span>
+              <span class="placeholder-badge">準備中</span>
+            </div>
+            <div class="mypage-placeholder-item">
+              <span>ヘルプ / フィードバック</span>
+              <span class="placeholder-badge">準備中</span>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <nav class="bottom-nav">
+        <button class="nav-item" onclick="App.showScreen('main')">
+          <span class="material-icons-round">calendar_view_week</span>
+          <span class="nav-label">こんだて表</span>
+        </button>
+        <button class="nav-item" onclick="App.showScreen('recipes')">
+          <span class="material-icons-round">menu_book</span>
+          <span class="nav-label">レシピ帳</span>
+        </button>
+        <button class="nav-item" onclick="App.showScreen('public')">
+          <span class="material-icons-round">explore</span>
+          <span class="nav-label">レシピカタログ</span>
+        </button>
+        <button class="nav-item active" onclick="App.showScreen('mypage')">
+          <span class="material-icons-round">person</span>
+          <span class="nav-label">マイページ</span>
+        </button>
       </nav>
     </div>
 
@@ -582,6 +825,129 @@
           <div class="set-template-list" id="set-template-list">
             <!-- セット一覧がここに入る -->
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- アカウント種別モーダル -->
+    <div id="modal-account-type" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">使い方を選ぶ</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-guide-text">いつでも戻せます。無理に変える必要はありません。</p>
+          <div class="account-type-options">
+            <button class="account-type-option" onclick="App.applyAccountType('user')">
+              <span>ユーザー</span>
+              <span class="option-desc">自分の献立を整える</span>
+            </button>
+            <button class="account-type-option" onclick="App.applyAccountType('creator')">
+              <span>クリエイター</span>
+              <span class="option-desc">セットを公開して届ける</span>
+            </button>
+            <button class="account-type-option" onclick="App.applyAccountType('paid')">
+              <span>有料クリエイター</span>
+              <span class="option-desc">有料セットを配信する</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 決済情報モーダル -->
+    <div id="modal-payment" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">お支払いの登録</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">カードブランド</label>
+            <input type="text" id="payment-brand" class="form-input" placeholder="例: Visa">
+          </div>
+          <div class="form-group">
+            <label class="form-label">カード末尾4桁</label>
+            <input type="text" id="payment-last4" class="form-input" placeholder="1234" maxlength="4">
+          </div>
+          <p class="modal-guide-text">購入時にも登録できます。ここでは末尾4桁だけを表示します。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App.savePaymentMethod()">保存する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- クリエイター登録モーダル -->
+    <div id="modal-creator-registration" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">みんなに公開する準備</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">表示名</label>
+            <input type="text" id="creator-display-name" class="form-input" placeholder="例: いつき">
+          </div>
+          <div class="form-group">
+            <label class="form-label">プロフィール</label>
+            <textarea id="creator-bio" class="import-textarea" placeholder="活動内容や得意ジャンル"></textarea>
+          </div>
+          <p class="modal-guide-text">
+            申請内容はマイページに反映されます。承認状況はあとから確認できます。
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App.submitCreatorRegistration()">申請する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 公開プロフィール編集モーダル -->
+    <div id="modal-creator-profile" class="modal hidden">
+      <div class="modal-backdrop" onclick="App.closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">公開プロフィールを編集</h2>
+          <button class="modal-close" onclick="App.closeModal()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">表示名</label>
+            <input type="text" id="creator-profile-display" class="form-input" placeholder="例: いつき">
+          </div>
+          <div class="form-group">
+            <label class="form-label">自己紹介</label>
+            <textarea id="creator-profile-bio-input" class="import-textarea" placeholder="どんな献立が得意か"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">公開ステータス</label>
+            <select id="creator-profile-public" class="form-input">
+              <option value="public">公開する</option>
+              <option value="private">まだ公開しない</option>
+            </select>
+          </div>
+          <p class="modal-guide-text">公開しない設定でも、あとから切り替えできます。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App.saveCreatorProfile()">保存する</button>
         </div>
       </div>
     </div>
