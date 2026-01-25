@@ -1328,10 +1328,10 @@ const App = {
       selectSet: {
         illustration: '📋',
         title: '献立セットを選ぼう',
-        description: 'まずは献立セットを選んでみましょう。<br>みんなのMenuにはすぐに使えるセットがあります。',
+        description: 'まずは献立セットを選んでみましょう。<br>レシピカタログにはすぐに使えるセットがあります。',
         actions: `
           <button class="btn-primary" onclick="App.closeGuide(); App.showScreen('public'); App.switchPublicTab('sets');">
-            みんなのMenuを見る
+            レシピカタログを見る
           </button>
           <button class="btn-text" onclick="App.closeGuide()">あとで</button>
         `
@@ -3842,7 +3842,7 @@ const App = {
               </div>
               <div class="set-card-meta">
                 <span class="material-icons-round">person</span>
-                <span>${set.author || 'みんなの献立'}</span>
+                <span>${set.author || 'レシピカタログ'}</span>
                 ${tags ? `<span class="set-card-tags">${tags}</span>` : ''}
               </div>
               <div class="set-card-badges">${badges}</div>
@@ -5119,7 +5119,7 @@ const App = {
     this.state.sets.push(newSet);
     this.saveState();
     this.closeModal();
-    this.showToast('わたしのセットに追加しました');
+    this.showToast('レシピ帳に保存しました');
 
     // 編集画面へ遷移
     this.editSet(newSet.id);
